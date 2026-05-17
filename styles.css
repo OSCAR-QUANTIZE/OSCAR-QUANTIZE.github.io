@@ -287,6 +287,25 @@ button.nav-cta:hover {
   margin-bottom: 1rem;
 }
 
+.hero-title-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+  color: var(--gold-light);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+}
+
+.hero-title-logo {
+  width: 54px;
+  height: auto;
+  filter: drop-shadow(0 6px 18px rgba(154, 123, 44, 0.22));
+  animation: logo-float 5s ease-in-out infinite;
+}
+
 /* Authors & affiliations */
 .authors-block {
   margin-bottom: 1.35rem;
