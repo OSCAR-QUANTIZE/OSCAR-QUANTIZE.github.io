@@ -506,60 +506,15 @@
           <p class="table-footnote">*TurboQuant: single-run (vLLM path too slow for 5-seed repeats). Naive INT2 and additional baselines in the paper.</p>
         </div>
 
-        <div class="efficiency-bar reveal">
-          <div class="eff-item">
-            <span class="eff-label">KV memory</span>
-            <div class="eff-track"><div class="eff-fill" style="--w:88%"></div></div>
-            <span class="eff-val">~8× reduction</span>
-          </div>
-          <div class="eff-item">
-            <span class="eff-label">Throughput (large batch)</span>
-            <div class="eff-track"><div class="eff-fill" style="--w:78%"></div></div>
-            <span class="eff-val">up to ~7×</span>
-          </div>
-          <div class="eff-item">
-            <span class="eff-label">Decode bs=1</span>
-            <div class="eff-track"><div class="eff-fill" style="--w:55%"></div></div>
-            <span class="eff-val">up to ~3×</span>
-          </div>
-        </div>
-
-        <figure class="efficiency-figure reveal" aria-label="OSCAR efficiency summary">
+        <figure class="figure-block throughput-figure reveal">
+          <img src="assets/figure6_throughput.png" alt="Job-level throughput at 100k sequence length across batch sizes" loading="lazy">
           <figcaption>
-            <strong>Serving efficiency summary.</strong>
-            Memory is normalized to BF16 KV cache (lower is better); throughput is normalized to BF16 serving (higher is better).
+            <p class="fig-caption-title">End-to-end serving throughput from the paper</p>
+            <p>
+              Job-level throughput at 100k-token sequence length as batch size increases.
+              Each group compares BF16, Saw-INT4, and OSCAR on Qwen3-4B/8B and GLM-4.7-FP8.
+            </p>
           </figcaption>
-          <div class="eff-chart">
-            <div class="eff-panel eff-memory">
-              <h4>KV memory</h4>
-              <div class="eff-axis">
-                <div class="eff-column eff-column-bf16" style="--h:100%">
-                  <span>1.00×</span>
-                </div>
-                <div class="eff-column eff-column-oscar" style="--h:12.5%">
-                  <span>0.125×</span>
-                </div>
-              </div>
-              <div class="eff-chart-labels"><span>BF16</span><span>OSCAR</span></div>
-              <p>~8× less KV memory for the quantized history segment.</p>
-            </div>
-            <div class="eff-panel">
-              <h4>Throughput</h4>
-              <div class="eff-axis eff-axis-speed">
-                <div class="eff-column eff-column-bf16" style="--h:14%">
-                  <span>1×</span>
-                </div>
-                <div class="eff-column eff-column-oscar" style="--h:100%">
-                  <span>~7×</span>
-                </div>
-                <div class="eff-column eff-column-oscar-lite" style="--h:43%">
-                  <span>~3×</span>
-                </div>
-              </div>
-              <div class="eff-chart-labels eff-chart-labels-three"><span>BF16</span><span>large batch</span><span>bs=1</span></div>
-              <p>Large-batch throughput and single-request decode speedup reported under the same serving path.</p>
-            </div>
-          </div>
         </figure>
       </div>
     </section>
