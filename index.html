@@ -366,15 +366,6 @@
                 <p class="fig-caption-note">Naive INT2, Hadamard-only, and clip-only baselines diverge in (b)–(d); full OSCAR stays closest to FP16.</p>
               </figcaption>
             </figure>
-
-            <figure class="figure-block">
-              <img src="assets/qk_alignment_layer16.png" alt="Query and key covariance structure at layer 16" loading="lazy">
-              <figcaption>
-                <p class="fig-caption-title">Q and K covariance bases are misaligned</p>
-                <p class="fig-caption-meta">Layer 16, Qwen3-8B (representative)</p>
-                <p>Left: heatmaps of <em>Q<sup>⊤</sup>Q</em> and <em>K<sup>⊤</sup>K</em>. Center: eigenvalue spectra (both low-rank, different decay). Right: |<em>U<sub>Q</sub><sup>⊤</sup> U<sub>K</sub></em>| eigenvector alignment (1 = aligned). A bright diagonal would mean shared eigenbases; the near-uniform pattern shows <em>Q</em> and <em>K</em> directions are nearly uncorrelated — rotating only for <em>K<sup>⊤</sup>K</em> outliers misses what attention reads via <em>Q<sup>⊤</sup>Q</em>.</p>
-              </figcaption>
-            </figure>
           </div>
         </div>
 
