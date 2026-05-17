@@ -171,6 +171,7 @@ body {
 .nav-links a {
   color: var(--text-muted);
   text-decoration: none;
+  font-family: "Times New Roman", Times, serif;
   font-size: 0.92rem;
   font-weight: 500;
   transition: color var(--transition);
@@ -199,7 +200,7 @@ body {
 
 button.nav-cta,
 button.cite-trigger {
-  font-family: var(--font-body);
+  font-family: "Times New Roman", Times, serif;
   font-size: 0.92rem;
   cursor: pointer;
 }
