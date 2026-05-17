@@ -82,11 +82,11 @@
           </div>
 
           <p class="hero-lead">
-            <strong>True INT2 KV-cache serving</strong> for long-context reasoning LLMs: attention-aware fixed rotations,
+            <strong>INT2 KV-cache serving</strong> for long-context reasoning LLMs: attention-aware fixed rotations,
             BF16 sink/recent protection, and SGLang-ready kernels at <strong>2.28 effective bits</strong> per KV element.
             On <strong>Qwen3-4B-Thinking</strong>, <strong>Qwen3-8B</strong>, <strong>Qwen3-32B</strong>, and <strong>GLM-4.7-FP8</strong>,
-            mean reasoning &amp; coding accuracy stays within a few points of BF16
-            (≤3.8 pts on 4B, ≤1.4 on 8B; tied on 32B &amp; GLM) — with ~<strong>8×</strong> KV memory savings and up to ~<strong>7×</strong> throughput.
+            the mean gap to BF16 is 3.78, 1.42, −0.02, and +0.27 points respectively, while reducing KV memory by ~<strong>8×</strong>
+            and increasing large-batch throughput by up to ~<strong>7×</strong>.
           </p>
           <div class="hero-ctas">
             <a href="https://github.com/FutureMLS-Lab/OSCAR" class="btn btn-primary" target="_blank" rel="noopener">
@@ -133,11 +133,11 @@
     <!-- Problem -->
     <section class="section" id="problem">
       <div class="container">
-        <h2 class="section-title reveal">Why 2-bit KV Cache Is Hard</h2>
+        <h2 class="section-title reveal">Where INT2 KV Quantization Fails</h2>
         <p class="section-lead reveal">
           KV activations have severe channel-wise outliers. At INT2, only four quantization levels exist —
-          outliers dominate the scale and crush normal values. Generic Hadamard rotations smooth outliers
-          but remain <strong>data-oblivious</strong>: they do not know which directions attention actually reads.
+          outliers dominate the scale and many non-outlier entries map to the same code. Hadamard rotations reduce
+          coordinate spikes, but they do not use the query/value statistics that determine attention error.
         </p>
         <div class="pillars reveal">
           <article class="glass-card">
@@ -147,13 +147,13 @@
           </article>
           <article class="glass-card">
             <div class="card-icon">↻</div>
-            <h3>Rotation alone is not enough</h3>
-            <p>Random or Hadamard rotations scatter energy but miss attention-important directions.</p>
+            <h3>Rotation target changes the error</h3>
+            <p>Random or Hadamard rotations mix coordinates; they do not choose directions from <code>Q<sup>⊤</sup>Q</code> or score-weighted value covariance.</p>
           </article>
           <article class="glass-card">
             <div class="card-icon">◎</div>
             <h3>Attention consumes correlations</h3>
-            <p>Keys enter via <code>QK<sup>⊤</sup></code>; values via score-weighted outputs — not raw Euclidean reconstruction.</p>
+            <p>Keys affect logits through <code>QK<sup>⊤</sup></code>; values affect the weighted sum after softmax. Raw tensor MSE is therefore an indirect objective.</p>
           </article>
         </div>
       </div>
@@ -175,7 +175,7 @@
             <em>Offline:</em> estimate attention-aware key/value covariances, build fixed rotations
             (<code>R = U · H<sub>Had</sub> · P<sub>br</sub></code>), and fit clipping thresholds — Hadamard mixing flattens raw outlier peaks while OSCAR rotations align quantization with attention.
             <em>Online:</em> keep sink and recent tokens in BF16; apply rotate–clip–INT2 to history KV inside a paged SGLang cache.
-            Right panels: accuracy preserved across models with throughput near QuaRot(INT2) and well above BF16.
+            Right panels: main-table accuracy and serving throughput under the same 2.28-BPE cache layout.
           </figcaption>
         </figure>
 
@@ -201,12 +201,12 @@
 
         <div class="target-matters-panel reveal">
           <div class="target-matters-intro">
-            <h3>Rotation target matters</h3>
+            <h3>Rotation Target Changes Accuracy</h3>
             <p>
-              A generic rotation can smooth outliers, but keys and values enter attention through different statistics.
+              A rotation that minimizes raw cache reconstruction can still distort the directions used by attention.
               OSCAR aligns rotations to <code>Q<sup>⊤</sup>Q</code> (keys) and <code>V<sup>⊤</sup>S<sup>⊤</sup>SV</code> (values) rather than raw cache reconstruction.
             </p>
-            <p class="muted">The question is not “rotation or no rotation?” — it is <em>what is the rotation aligned to?</em></p>
+            <p class="muted">The ablation changes the rotation target or removes one factor of <code>R = U · H<sub>Had</sub> · P<sub>br</sub></code>; the INT2 layout and BF16 windows stay fixed.</p>
             <p class="ablation-setup">
               <strong>Setup.</strong> <strong>Qwen3-8B</strong>, same INT2 KV budget (sink&nbsp;64 + recent&nbsp;256, calibration-derived clip).
               Each number is the <strong>unweighted mean pass@1 accuracy (%)</strong> over five benchmarks:
@@ -257,7 +257,7 @@
             <figure class="figure-block">
               <img src="assets/qk_alignment_layer16.png" alt="Query and key covariance structure at layer 16" loading="lazy">
               <figcaption>
-                <p class="fig-caption-title">Why a generic rotation is not enough</p>
+                <p class="fig-caption-title">Q and K covariance bases are misaligned</p>
                 <p class="fig-caption-meta">Layer 16, Qwen3-8B (representative)</p>
                 <p>Left: heatmaps of <em>Q<sup>⊤</sup>Q</em> and <em>K<sup>⊤</sup>K</em>. Center: eigenvalue spectra (both low-rank, different decay). Right: |<em>U<sub>Q</sub><sup>⊤</sup> U<sub>K</sub></em>| eigenvector alignment (1 = aligned). A bright diagonal would mean shared eigenbases; the near-uniform pattern shows <em>Q</em> and <em>K</em> directions are nearly uncorrelated — rotating only for <em>K<sup>⊤</sup>K</em> outliers misses what attention reads via <em>Q<sup>⊤</sup>Q</em>.</p>
               </figcaption>
@@ -428,7 +428,7 @@
         <h2 class="section-title reveal">Accuracy &amp; Efficiency</h2>
         <p class="section-lead reveal">
           Evaluated on reasoning models with up to 32K-token traces across five reasoning and coding benchmarks.
-          Long-context RULER-NIAH robust up to 128K on Qwen3 models.
+          RULER-NIAH is evaluated up to 128K on Qwen3 models.
         </p>
         <div class="results-grid reveal">
           <div class="result-card">
@@ -444,7 +444,7 @@
           <div class="result-card">
             <h4>Qwen3-32B &amp; GLM-4.7</h4>
             <p class="result-big">≈ BF16</p>
-            <p class="result-sub">effectively on par</p>
+            <p class="result-sub">−0.02 / +0.27 mean gap</p>
           </div>
           <div class="result-card highlight">
             <h4>vs TurboQuant</h4>
@@ -553,29 +553,29 @@
           <div class="compare-row">
             <span>System</span>
             <span>Quantizer backend</span>
-            <span class="highlight-text">Full SGLang path + kernels</span>
+            <span class="highlight-text">SGLang cache layout + Triton kernels</span>
           </div>
         </div>
         <p class="compare-note reveal">
-          TurboQuant solves generic online vector quantization. OSCAR solves attention-aware 2-bit KV-cache serving.
-          The two methods optimize different quantities and assume different serving layouts.
+          TurboQuant and OSCAR both use rotations and low-bit codes, but their measured objectives differ:
+          TurboQuant reports a vector-quantizer backend; OSCAR reports an SGLang KV-cache layout and decode path.
         </p>
 
         <div class="compat-panel reveal">
           <h3>Are OSCAR and TurboQuant compatible?</h3>
           <p class="compat-lead">
-            <strong>Conceptually, yes</strong> — but the interfaces do not match today.
-            TurboQuant exposes a generic online quantizer; OSCAR fixes the KV layout, BF16 windows, and SGLang decode kernels around its rotation target.
+            A hybrid is possible as a new experiment, but it is not the code path evaluated here.
+            TurboQuant exposes an online quantizer; OSCAR fixes the KV layout, BF16 windows, and SGLang decode kernels around its rotation target.
           </p>
 
           <div class="compat-grid">
             <article class="compat-card">
               <h4>TurboQuant</h4>
               <ul>
-                <li>Generic <em>online</em> vector quantizer</li>
+                <li><em>Online</em> vector quantizer</li>
                 <li>Data-oblivious random rotation</li>
                 <li>Optimizes MSE / inner-product distortion</li>
-                <li>Strong rate–distortion theory; quantizer backend</li>
+                <li>Rate–distortion analysis for the quantizer backend</li>
                 <li>~3.25 BPE in our fair KV comparison (no mixed-precision exemptions)</li>
               </ul>
             </article>
@@ -585,18 +585,18 @@
                 <li>Attention-aware <em>2-bit KV-cache serving</em> method</li>
                 <li>Offline covariance-aware rotations (<code>Q<sup>⊤</sup>Q</code>, <code>V<sup>⊤</sup>S<sup>⊤</sup>SV</code>)</li>
                 <li>BF16 sink + recent protection + INT2 history layout</li>
-                <li>Full SGLang / Triton path with paged KV</li>
-                <li>2.28 BPE with near-BF16 accuracy on reasoning models</li>
+                <li>SGLang / Triton path with paged KV</li>
+                <li>2.28 BPE; BF16 mean gap reported in the table above</li>
               </ul>
             </article>
           </div>
 
           <div class="compat-takeaways">
-            <p><strong>What composes in principle:</strong>
+            <p><strong>Possible hybrid to test:</strong>
               One could explore TurboQuant-style codebooks <em>after</em> OSCAR's attention-aware rotation,
               or test OSCAR's rotation targets inside a TurboQuant-like backend.
             </p>
-            <p><strong>What does not drop in today:</strong>
+            <p><strong>Why this is not a one-line change:</strong>
               Swapping one method for the other would require new kernels, revised bit accounting (effective BPE),
               and new accuracy/throughput measurements for the resulting cache layout.
             </p>
