@@ -6,6 +6,16 @@
   <meta name="description" content="Intuition for OSCAR rotation factors: why U, Hadamard, and bit-reversal are composed for INT2 KV-cache quantization.">
   <title>OSCAR — Rotation Intuition</title>
   <link rel="stylesheet" href="styles.css">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body class="intuition-page">
   <div class="bg-grid" aria-hidden="true"></div>
@@ -40,20 +50,24 @@
     <section class="section intuition-hero">
       <div class="container">
         <p class="callout-eyebrow reveal">Rotation intuition</p>
-        <h1 class="intuition-title reveal">Why OSCAR uses <code>U · H<sub>Had</sub> · P</code></h1>
+        <h1 class="intuition-title reveal">Why OSCAR uses \(U \cdot H_{\mathrm{Had}} \cdot P\)</h1>
         <p class="intuition-lead reveal">
           OSCAR rotates each key row before INT2 quantization with
-          <code>R_K = U_Q H<sub>Had</sub> P_K</code>. The same construction is used for values with
-          <code>R_V = U_S H<sub>Had</sub> P_V</code>. These factors are not interchangeable:
-          <code>U</code> chooses the attention-relevant basis, <code>H<sub>Had</sub></code> equalizes and mixes that basis,
-          and <code>P</code> places the mixed channels into groups that the INT2 kernel can quantize stably.
+          \(R_K = U_Q H_{\mathrm{Had}} P_K\). The same construction is used for values with
+          \(R_V = U_S H_{\mathrm{Had}} P_V\). These factors are not interchangeable:
+          \(U\) chooses the attention-relevant basis, \(H_{\mathrm{Had}}\) equalizes and mixes that basis,
+          and \(P\) places the mixed channels into groups that the INT2 kernel can quantize stably.
         </p>
         <div class="intuition-equation reveal">
-          <code>||QK<sup>⊤</sup> - QK̂<sup>⊤</sup>||<sub>F</sub><sup>2</sup> = tr(R<sub>K</sub><sup>⊤</sup>C<sub>Q</sub>R<sub>K</sub> · E<sub>K</sub>)</code>
+          \[
+          \left\lVert QK^\top - Q\widehat{K}^{\top}\right\rVert_F^2
+          =
+          \operatorname{tr}\!\left(R_K^\top C_Q R_K \cdot E_K\right)
+          \]
         </div>
         <p class="intuition-formula-note reveal">
-          Here <code>C_Q = Q<sup>⊤</sup>Q</code>, and <code>E_K</code> is the residual covariance of
-          <code>KR_K - Q<sub>2</sub>(KR_K)</code>. The rotation changes both terms: the attention-importance metric
+          Here \(C_Q = Q^\top Q\), and \(E_K\) is the residual covariance of
+          \(KR_K - Q_2(KR_K)\). The rotation changes both terms: the attention-importance metric
           and the distribution seen by the per-token, per-group INT2 quantizer.
         </p>
       </div>
@@ -63,15 +77,15 @@
       <div class="container">
         <h2 class="section-title reveal">The two jobs of the rotation</h2>
         <p class="section-lead reveal">
-          A useful key rotation must do more than reduce raw <code>K</code> reconstruction error. It must reduce the
-          error after multiplication by <code>Q</code>, while also making token-wise INT2 scales less dominated by outlier channels.
+          A useful key rotation must do more than reduce raw \(K\) reconstruction error. It must reduce the
+          error after multiplication by \(Q\), while also making token-wise INT2 scales less dominated by outlier channels.
         </p>
         <div class="intuition-logic-grid reveal">
           <article class="intuition-factor">
             <span class="factor-tag">A</span>
             <h3>Shape the attention metric</h3>
             <p>
-              <code>R_K<sup>⊤</sup>C_QR_K</code> tells us how much quantization noise in each rotated coordinate
+              \(R_K^\top C_Q R_K\) tells us how much quantization noise in each rotated coordinate
               is amplified in the attention logits. Error in a high-query-energy direction is expensive; error in a
               low-query-energy direction is much less visible.
             </p>
@@ -80,7 +94,7 @@
             <span class="factor-tag">B</span>
             <h3>Shape the quantizer residual</h3>
             <p>
-              <code>E_K</code> depends on the values that the INT2 quantizer sees. A single scale is fitted per token
+              \(E_K\) depends on the values that the INT2 quantizer sees. A single scale is fitted per token
               and per group, so one large channel can expand the range and make the other channels in that group use
               a much coarser quantization step.
             </p>
@@ -95,12 +109,12 @@
         <div class="intuition-factor-grid reveal">
           <article class="intuition-factor">
             <span class="factor-tag">1</span>
-            <h3><code>U_Q</code>: expose attention-importance directions</h3>
+            <h3>\(U_Q\): expose attention-importance directions</h3>
             <p>
-              Eigendecompose <code>C_Q = U_QΛ_QU_Q<sup>⊤</sup></code>, with eigenvalues sorted from large to small.
-              If <code>R_K = U_Q</code>, the rotated importance metric becomes <code>Λ_Q</code>. Channel <code>j</code>
-              of <code>KU_Q</code> is the projection onto query principal direction <code>u_j</code>, and its noise is
-              weighted by <code>λ_j = ||Qu_j||<sub>2</sub><sup>2</sup></code>.
+              Eigendecompose \(C_Q = U_Q\Lambda_Q U_Q^\top\), with eigenvalues sorted from large to small.
+              If \(R_K = U_Q\), the rotated importance metric becomes \(\Lambda_Q\). Channel \(j\)
+              of \(KU_Q\) is the projection onto query principal direction \(u_j\), and its noise is
+              weighted by \(\lambda_j = \lVert Q u_j\rVert_2^2\).
             </p>
             <p>
               This is the right first step because it makes attention importance explicit. It is not sufficient by itself:
@@ -110,11 +124,11 @@
           </article>
           <article class="intuition-factor">
             <span class="factor-tag">2</span>
-            <h3><code>H<sub>Had</sub></code>: equalize importance and suppress outliers</h3>
+            <h3>\(H_{\mathrm{Had}}\): equalize importance and suppress outliers</h3>
             <p>
-              Once <code>U_Q</code> diagonalizes the importance metric, normalized Hadamard mixing gives an exact invariant:
-              every diagonal entry of <code>H<sub>Had</sub><sup>⊤</sup>Λ_QH<sub>Had</sub></code> equals
-              <code>tr(C_Q)/d</code>. The peaky importance spectrum is replaced by a uniform diagonal.
+              Once \(U_Q\) diagonalizes the importance metric, normalized Hadamard mixing gives an exact invariant:
+              every diagonal entry of \(H_{\mathrm{Had}}^\top \Lambda_Q H_{\mathrm{Had}}\) equals
+              \(\operatorname{tr}(C_Q)/d\). The peaky importance spectrum is replaced by a uniform diagonal.
             </p>
             <p>
               The same Hadamard matrix also mixes each token across all channels with equal-magnitude signed weights.
@@ -124,14 +138,14 @@
           </article>
           <article class="intuition-factor">
             <span class="factor-tag">3</span>
-            <h3><code>P_K</code>: balance contiguous INT2 groups</h3>
+            <h3>\(P_K\): balance contiguous INT2 groups</h3>
             <p>
-              The kernel quantizes contiguous groups of <code>G_K</code> channels. Hadamard mixing makes channels more uniform
+              The kernel quantizes contiguous groups of \(G_K\) channels. Hadamard mixing makes channels more uniform
               marginally, but each group still needs a balanced sample of the importance hierarchy.
             </p>
             <p>
-              OSCAR uses permuted bit-reversal: the largest eigenvalue direction goes to position <code>0</code>, the second to
-              <code>64</code>, the third to <code>32</code>, the fourth to <code>96</code>, and so on for <code>d = 128</code>.
+              OSCAR uses permuted bit-reversal: the largest eigenvalue direction goes to position \(0\), the second to
+              \(64\), the third to \(32\), the fourth to \(96\), and so on for \(d = 128\).
               For any power-of-two group size, top directions are recursively spread across different groups instead of
               being clustered in one quantization block.
             </p>
@@ -143,20 +157,20 @@
     <section class="section section-alt">
       <div class="container intuition-two-col">
         <div class="reveal">
-          <h2 class="section-title section-title-left">Why <code>K<sup>⊤</sup>K</code> is not enough</h2>
+          <h2 class="section-title section-title-left">Why \(K^\top K\) is not enough</h2>
           <p class="intuition-copy">
             A tempting alternative is to rotate keys by their own covariance. That optimizes the geometry of raw
-            <code>K</code>, but attention consumes keys through <code>QK<sup>⊤</sup></code>. A low raw reconstruction error
+            \(K\), but attention consumes keys through \(QK^\top\). A low raw reconstruction error
             can still be harmful if it lands in directions heavily used by queries.
           </p>
           <p class="intuition-copy">
-            Empirically, <code>Q<sup>⊤</sup>Q</code> and <code>K<sup>⊤</sup>K</code> do not share a useful eigenbasis. On Qwen3-8B,
-            the top-8 eigenvector self-alignment across layers is about <code>0.05–0.15</code>, close to random alignment
-            at <code>d = 128</code>. Rotating key covariance by <code>U_Q</code> can even reduce its diagonal concentration.
+            Empirically, \(Q^\top Q\) and \(K^\top K\) do not share a useful eigenbasis. On Qwen3-8B,
+            the top-8 eigenvector self-alignment across layers is about \(0.05\text{--}0.15\), close to random alignment
+            at \(d = 128\). Rotating key covariance by \(U_Q\) can even reduce its diagonal concentration.
           </p>
           <p class="intuition-copy">
-            This is why OSCAR uses <code>Q<sup>⊤</sup>Q</code> for keys and
-            <code>V<sup>⊤</sup>S<sup>⊤</sup>SV</code> for values. The targets match the quantities consumed by attention:
+            This is why OSCAR uses \(Q^\top Q\) for keys and
+            \(V^\top S^\top S V\) for values. The targets match the quantities consumed by attention:
             logits for keys, and score-weighted value aggregation for values.
           </p>
         </div>
@@ -188,9 +202,9 @@
         <div class="reveal">
           <h2 class="section-title section-title-left">Why downstream errors separate</h2>
           <p class="intuition-copy">
-            OSCAR is not designed to minimize plain Euclidean MSE of <code>K</code> or <code>V</code>. Its targets are chosen
-            so that the quantization error is small after the operations that matter: <code>QK<sup>⊤</sup></code> for keys
-            and <code>SV</code> for values.
+            OSCAR is not designed to minimize plain Euclidean MSE of \(K\) or \(V\). Its targets are chosen
+            so that the quantization error is small after the operations that matter: \(QK^\top\) for keys
+            and \(SV\) for values.
           </p>
           <p class="intuition-copy">
             This explains why some baselines can look acceptable on raw tensor reconstruction but fail after attention.
@@ -205,7 +219,7 @@
       <div class="container">
         <h2 class="section-title reveal">Worked example: Qwen3-4B-Thinking layer 10</h2>
         <p class="section-lead reveal">
-          This example uses <code>d = 128</code>, <code>G_K = 64</code>, 8000 calibration tokens, and the production
+          This example uses \(d = 128\), \(G_K = 64\), 8000 calibration tokens, and the production
           query covariance averaged over GQA groups. The table separates what the quantizer sees from how attention
           weights the resulting residual.
         </p>
@@ -218,38 +232,176 @@
                   <th>max |K̃|</th>
                   <th>per-group max-min</th>
                   <th>importance max/mean</th>
-                  <th>tr(E<sub>K</sub>)</th>
+                  <th>\(\operatorname{tr}(E_K)\)</th>
                   <th>Interpretation</th>
                 </tr>
               </thead>
               <tbody>
                 <tr><td>I (no rotation)</td><td>36.3</td><td>25.7</td><td>43.0</td><td>233</td><td>large outliers and highly uneven attention importance</td></tr>
-                <tr><td>H<sub>Had</sub></td><td>11.1</td><td>13.3</td><td>1.72</td><td>206</td><td>outliers shrink, but the attention metric is not exactly equalized</td></tr>
-                <tr><td>U<sub>Q</sub></td><td>29.4</td><td>22.4</td><td>46.9</td><td>1354</td><td>importance is exposed, but the INT2 group range gets worse</td></tr>
-                <tr><td>U<sub>Q</sub>H<sub>Had</sub></td><td>7.46</td><td>13.4</td><td><strong>1.00</strong></td><td>208</td><td>Hadamard equalizes the diagonal importance metric exactly</td></tr>
-                <tr class="highlight-row"><td><strong>U<sub>Q</sub>H<sub>Had</sub>P<sub>K</sub> (OSCAR)</strong></td><td><strong>7.46</strong></td><td><strong>11.6</strong></td><td><strong>1.00</strong></td><td><strong>169</strong></td><td><strong>equalized importance plus lower INT2 residual</strong></td></tr>
+                <tr><td>\(H_{\mathrm{Had}}\)</td><td>11.1</td><td>13.3</td><td>1.72</td><td>206</td><td>outliers shrink, but the attention metric is not exactly equalized</td></tr>
+                <tr><td>\(U_Q\)</td><td>29.4</td><td>22.4</td><td>46.9</td><td>1354</td><td>importance is exposed, but the INT2 group range gets worse</td></tr>
+                <tr><td>\(U_QH_{\mathrm{Had}}\)</td><td>7.46</td><td>13.4</td><td><strong>1.00</strong></td><td>208</td><td>Hadamard equalizes the diagonal importance metric exactly</td></tr>
+                <tr class="highlight-row"><td><strong>\(U_QH_{\mathrm{Had}}P_K\) (OSCAR)</strong></td><td><strong>7.46</strong></td><td><strong>11.6</strong></td><td><strong>1.00</strong></td><td><strong>169</strong></td><td><strong>equalized importance plus lower INT2 residual</strong></td></tr>
               </tbody>
             </table>
           </div>
         </div>
         <div class="intuition-detail-list reveal">
           <p>
-            <strong>No rotation.</strong> One raw token has group ranges <code>44.81</code> and <code>7.19</code>; a few outliers set
+            <strong>No rotation.</strong> One raw token has group ranges \(44.81\) and \(7.19\); a few outliers set
             the INT2 scale, so most coordinates in that group are quantized too coarsely.
           </p>
           <p>
-            <strong><code>U_Q</code> alone.</strong> The attention importance is now explicit, but K-side variance is pushed into
-            the eigenbasis unevenly. In the example, the difficult group flips: the second group range jumps to <code>37.85</code>.
+            <strong>\(U_Q\) alone.</strong> The attention importance is now explicit, but K-side variance is pushed into
+            the eigenbasis unevenly. In the example, the difficult group flips: the second group range jumps to \(37.85\).
           </p>
           <p>
-            <strong><code>U_QH<sub>Had</sub></code>.</strong> Hadamard spreads the spike across all channels and forces
-            <code>max/mean = 1.00</code> for the diagonal of the importance metric. The per-group ranges become nearly balanced.
+            <strong>\(U_QH_{\mathrm{Had}}\).</strong> Hadamard spreads the spike across all channels and forces
+            \(\max/\mathrm{mean} = 1.00\) for the diagonal of the importance metric. The per-group ranges become nearly balanced.
           </p>
           <p>
-            <strong><code>U_QH<sub>Had</sub>P_K</code>.</strong> The permutation does not change the set of 128 values; it changes
-            which values share an INT2 group. Averaged across tokens, the mean per-group max-min drops from <code>13.40</code> to
-            <code>11.58</code>, reducing <code>tr(E_K)</code> from <code>208</code> to <code>169</code>.
+            <strong>\(U_QH_{\mathrm{Had}}P_K\).</strong> The permutation does not change the set of 128 values; it changes
+            which values share an INT2 group. Averaged across tokens, the mean per-group max-min drops from \(13.40\) to
+            \(11.58\), reducing \(\operatorname{tr}(E_K)\) from \(208\) to \(169\).
           </p>
+        </div>
+
+        <div class="matrix-gallery reveal">
+          <h3>What the quantizer sees for one token</h3>
+          <p>
+            Each matrix prints all 128 channels for one non-sink token, reshaped as an \(8 \times 16\) grid.
+            The horizontal rule separates the two \(G_K=64\) INT2 groups.
+          </p>
+
+          <article class="matrix-card">
+            <div class="matrix-head">
+              <h4>No rotation: \(K_{t,\cdot}\)</h4>
+              <span>group 0 range \(44.81\), group 1 range \(7.19\)</span>
+            </div>
+            <div class="math-matrix">
+              \[
+              {\small
+              K_{t,\cdot} =
+              \left[
+              \begin{array}{rrrrrrrrrrrrrrrr}
+               3.42 & -0.61 &  1.59 &  0.27 & -3.14 & -0.05 &  3.55 &  1.09 &  2.05 & -1.05 &  1.86 & -0.03 & -0.42 & -0.89 & -1.54 &  2.06 \\
+              -1.74 & -0.15 & -0.39 & -0.89 & -0.02 &  2.55 &  0.11 &  1.79 & -0.28 &  0.25 & -1.40 & -6.09 & -1.04 & -0.12 &  0.64 & -0.95 \\
+               9.06 &  1.17 &  0.08 & -1.49 &  0.29 &  1.13 &  0.47 &  0.17 &  1.22 &  0.55 & 14.19 & -0.26 & -0.09 &  0.20 &  2.39 &  0.40 \\
+               1.09 & -0.06 & \mathbf{-30.62} & 0.00 & 1.03 & 0.57 & -1.30 & 2.47 & -0.11 & -0.08 & 0.56 & -0.47 & 0.45 & -0.88 & 2.31 & -1.05 \\
+              \hline
+               0.50 &  0.44 &  0.10 & -0.35 & -0.78 &  1.46 & -1.16 &  2.56 &  1.64 & -0.09 &  0.90 &  2.33 &  1.09 &  2.72 &  0.95 &  0.20 \\
+               1.30 &  1.82 &  0.54 &  1.27 & -1.05 &  0.50 & -4.47 &  1.20 &  0.32 &  1.36 & -0.81 & -0.04 &  2.27 & -0.77 &  0.64 &  1.27 \\
+               0.03 & -0.20 &  0.41 &  0.58 &  0.79 &  1.05 &  0.46 & -0.09 &  0.49 &  0.29 & -0.02 &  0.20 &  1.36 &  0.77 & -1.01 & -2.33 \\
+               1.19 & -1.77 & -0.01 & -0.49 &  0.47 &  0.91 &  0.42 &  0.17 &  1.38 & -0.39 & -0.00 &  0.43 & -0.98 & -0.50 &  0.17 & -0.50
+              \end{array}
+              \right]}
+              \]
+            </div>
+          </article>
+
+          <article class="matrix-card">
+            <div class="matrix-head">
+              <h4>Eigenbasis only: \((KU_Q)_{t,\cdot}\)</h4>
+              <span>group 0 range \(7.16\), group 1 range \(37.85\)</span>
+            </div>
+            <div class="math-matrix">
+              \[
+              {\small
+              (KU_Q)_{t,\cdot} =
+              \left[
+              \begin{array}{rrrrrrrrrrrrrrrr}
+               0.16 & -1.75 &  1.86 & -2.42 &  1.11 &  1.05 & -0.69 &  0.26 &  1.11 & -0.55 &  3.39 & -1.80 &  1.78 &  1.65 & -1.49 & -1.32 \\
+               0.05 & -0.18 & -2.00 & -1.27 &  3.20 & -1.47 &  0.31 & -1.07 &  0.87 & -1.54 & -3.78 & -0.89 &  1.60 &  1.03 &  0.50 &  0.55 \\
+               0.49 &  0.55 & -0.90 & -0.05 &  0.17 &  0.20 &  0.78 & -1.21 & -1.06 & -1.70 &  0.63 &  0.12 & -0.28 &  2.99 &  2.88 & -0.97 \\
+              -1.42 &  2.12 & -0.94 & -2.88 &  1.30 & -0.42 &  1.37 &  0.58 & -1.46 & -2.04 &  0.28 & -0.28 & -2.63 & -0.20 & -1.77 & -0.83 \\
+              \hline
+               0.50 &  0.12 & -1.19 &  0.81 & -1.90 &  0.40 & -1.31 & -0.15 & -2.31 &  1.52 &  3.20 & -0.46 & -0.77 & -0.09 & -1.34 &  1.72 \\
+               0.40 & -0.72 & -0.57 &  0.40 &  0.84 & -0.72 & -1.94 & -0.11 &  1.26 &  0.07 &  0.09 & -0.06 &  0.87 & -0.92 & -0.63 &  1.19 \\
+              -2.31 &  1.56 &  1.90 &  1.26 &  1.16 & -0.72 & -0.56 & -0.48 &  1.21 &  0.20 & -0.26 & -1.78 &  1.71 & -1.28 &  1.07 &  1.27 \\
+              -3.32 &  0.47 & -0.43 & -1.77 & -1.42 &  1.42 &  4.99 & -1.91 & -0.25 & -1.02 &  0.51 & -1.65 & -1.11 & -8.07 & 15.28 & \mathbf{29.77}
+              \end{array}
+              \right]}
+              \]
+            </div>
+          </article>
+
+          <article class="matrix-card">
+            <div class="matrix-head">
+              <h4>Eigenbasis + Hadamard: \((KU_QH_{\mathrm{Had}})_{t,\cdot}\)</h4>
+              <span>group 0 range \(13.52\), group 1 range \(13.58\)</span>
+            </div>
+            <div class="math-matrix">
+              \[
+              {\small
+              (KU_QH_{\mathrm{Had}})_{t,\cdot} =
+              \left[
+              \begin{array}{rrrrrrrrrrrrrrrr}
+               2.24 &  1.08 & -3.73 &  0.26 & -5.76 &  0.92 &  4.08 & -3.39 & -3.72 &  0.29 &  5.55 & -2.67 &  3.19 & -3.70 & -4.16 &  1.80 \\
+              -0.87 &  0.64 &  4.12 & -3.18 &  5.12 &  1.16 & -6.79 &  0.97 &  1.91 & -2.08 & -4.91 &  4.21 & -1.67 &  1.97 &  4.47 & -0.63 \\
+              -2.86 &  0.66 &  6.73 &  1.83 &  4.37 &  1.49 & -5.77 &  0.72 &  1.52 & -0.05 & -4.94 &  3.97 & -3.09 &  2.28 &  4.34 & -0.37 \\
+               1.90 & -1.30 & -6.06 & -1.90 & -2.58 &  3.27 &  4.18 & -3.10 & -2.31 &  0.88 &  5.04 & -2.61 & -0.07 & -1.10 & -2.17 &  4.09 \\
+              \hline
+              -3.71 &  2.31 &  6.89 & -1.79 &  1.12 & -0.12 & -5.61 &  3.44 &  4.10 &  0.85 & -3.94 &  3.17 & -3.51 &  0.62 & \mathbf{7.03} & -5.15 \\
+               4.11 &  1.23 & -4.84 &  0.19 & -3.60 &  2.16 &  3.36 & -0.01 & -4.31 &  0.17 &  3.97 & -2.02 &  2.49 & -0.04 & -4.11 &  2.57 \\
+               3.72 &  2.20 & -3.51 &  1.67 & -5.30 & -0.01 &  4.53 & -2.49 & -3.30 &  0.32 &  2.06 & -4.40 &  3.14 & -1.10 & \mathbf{-6.54} &  1.40 \\
+              -2.85 &  1.72 &  5.21 & -0.32 &  4.97 &  1.00 & -5.68 & -1.24 &  3.87 & -1.45 & -5.40 &  1.67 & -4.30 &  1.20 &  3.73 & -3.39
+              \end{array}
+              \right]}
+              \]
+            </div>
+          </article>
+
+          <article class="matrix-card">
+            <div class="matrix-head">
+              <h4>Pure Hadamard: \((KH_{\mathrm{Had}})_{t,\cdot}\)</h4>
+              <span>group 0 range \(13.12\), group 1 range \(14.01\)</span>
+            </div>
+            <div class="math-matrix">
+              \[
+              {\small
+              (KH_{\mathrm{Had}})_{t,\cdot} =
+              \left[
+              \begin{array}{rrrrrrrrrrrrrrrr}
+               2.20 & -0.20 &  3.44 &  2.25 & -1.33 &  2.33 &  3.83 &  2.71 & -2.34 & -5.96 &  4.20 &  5.20 & -3.46 & -0.77 &  4.42 &  4.48 \\
+               \mathbf{7.15} &  5.23 & -4.17 & -3.54 &  5.85 &  5.28 & -3.61 & -1.41 &  1.05 &  3.94 & -1.22 & -2.85 &  1.48 &  1.03 &  2.05 & -0.46 \\
+               1.02 & -1.19 & -2.61 & -2.01 &  0.93 &  3.00 & -1.01 & -3.19 &  3.09 &  2.20 & -5.85 & -5.58 &  4.90 &  3.06 & -4.39 & -3.55 \\
+              -3.07 & -3.65 &  0.48 &  4.83 & -3.59 & -2.92 &  3.38 &  5.09 & -2.81 & -0.89 &  1.22 &  0.46 & -3.49 & -2.21 &  2.88 &  0.84 \\
+              \hline
+              -1.53 &  1.03 &  0.94 &  0.19 & -2.30 &  0.20 &  5.16 &  1.89 & -1.37 & -3.52 &  4.74 &  4.87 & -3.51 & -4.25 &  4.14 &  5.80 \\
+               5.48 &  5.35 & -4.44 & -1.88 &  7.12 &  5.46 & -1.44 & -2.71 &  1.37 &  3.77 &  0.45 & -2.59 &  3.21 &  2.03 & -0.67 &  0.81 \\
+              -1.55 &  2.51 & -2.80 & -3.34 &  0.29 &  1.81 & -2.03 & -0.88 &  5.68 &  4.70 & \mathbf{-6.89} & -5.69 &  1.38 &  1.07 & -4.79 & -2.27 \\
+              -3.94 & -4.43 &  2.41 &  5.23 & -2.12 & -5.19 &  2.62 &  2.32 & -1.78 & -2.21 &  0.40 &  0.43 & -0.79 & -1.48 &  1.86 &  2.20
+              \end{array}
+              \right]}
+              \]
+            </div>
+          </article>
+
+          <article class="matrix-card">
+            <div class="matrix-head">
+              <h4>OSCAR: \((KU_QH_{\mathrm{Had}}P_K)_{t,\cdot}\)</h4>
+              <span>group 0 range \(13.82\), group 1 range \(9.36\)</span>
+            </div>
+            <div class="math-matrix">
+              \[
+              {\small
+              (KU_QH_{\mathrm{Had}}P_K)_{t,\cdot} =
+              \left[
+              \begin{array}{rrrrrrrrrrrrrrrr}
+               2.24 & -3.71 & -2.86 &  3.72 & -0.87 &  4.11 &  1.90 & -2.85 & -3.72 &  4.10 &  1.52 & -3.30 &  1.91 & -4.31 & -2.31 &  3.87 \\
+              -5.76 &  1.12 &  4.37 & -5.30 &  5.12 & -3.60 & -2.58 &  4.97 &  3.19 & -3.51 & -3.09 &  3.14 & -1.67 &  2.49 & -0.07 & -4.30 \\
+              -3.73 &  6.89 &  6.73 & -3.51 &  4.12 & -4.84 & -6.06 &  5.21 &  5.55 & -3.94 & -4.94 &  2.06 & -4.91 &  3.97 &  5.04 & -5.40 \\
+               4.08 & -5.61 & -5.77 &  4.53 & -6.79 &  3.36 &  4.18 & -5.68 & -4.16 & \mathbf{7.03} &  4.34 & \mathbf{-6.54} &  4.47 & -4.11 & -2.17 &  3.73 \\
+              \hline
+               1.08 &  2.31 &  0.66 &  2.20 &  0.64 &  1.23 & -1.30 &  1.72 &  0.29 &  0.85 & -0.05 &  0.32 & -2.08 &  0.17 &  0.88 & -1.45 \\
+               0.92 & -0.12 &  1.49 & -0.01 &  1.16 &  2.16 &  3.27 &  1.00 & -3.70 &  0.62 &  2.28 & -1.10 &  1.97 & -0.04 & -1.10 &  1.20 \\
+               0.26 & -1.79 &  1.83 &  1.67 & -3.18 &  0.19 & -1.90 & -0.32 & -2.67 &  3.17 &  3.97 & -4.40 &  4.21 & -2.02 & -2.61 &  1.67 \\
+              -3.39 &  3.44 &  0.72 & -2.49 &  0.97 & -0.01 & -3.10 & -1.24 &  1.80 & -5.15 & -0.37 &  1.40 & -0.63 &  2.57 &  4.09 & -3.39
+              \end{array}
+              \right]}
+              \]
+            </div>
+          </article>
         </div>
       </div>
     </section>
@@ -259,20 +411,20 @@
         <h2 class="section-title reveal">Takeaway</h2>
         <div class="intuition-factor-grid reveal">
           <article class="intuition-factor">
-            <h3><code>U</code> gives the right metric</h3>
+            <h3>\(U\) gives the right metric</h3>
             <p>It turns the attention-aware covariance into eigenvalue weights, so the rotation knows which directions matter to attention.</p>
           </article>
           <article class="intuition-factor">
-            <h3><code>H<sub>Had</sub></code> makes the metric usable</h3>
-            <p>It equalizes the importance diagonal exactly after <code>U</code> and spreads token-level outliers before INT2 scaling.</p>
+            <h3>\(H_{\mathrm{Had}}\) makes the metric usable</h3>
+            <p>It equalizes the importance diagonal exactly after \(U\) and spreads token-level outliers before INT2 scaling.</p>
           </article>
           <article class="intuition-factor">
-            <h3><code>P</code> makes grouping usable</h3>
-            <p>It balances high-importance directions across contiguous quantization groups; when <code>G_K = d</code>, this step becomes a no-op.</p>
+            <h3>\(P\) makes grouping usable</h3>
+            <p>It balances high-importance directions across contiguous quantization groups; when \(G_K = d\), this step becomes a no-op.</p>
           </article>
         </div>
         <p class="intuition-copy intuition-summary reveal">
-          The value rotation follows the same logic with <code>C_S = V<sup>⊤</sup>S<sup>⊤</sup>SV</code>: choose the basis for the
+          The value rotation follows the same logic with \(C_S = V^\top S^\top S V\): choose the basis for the
           quantity attention consumes, equalize and mix it, then lay it out for the low-bit group quantizer.
         </p>
       </div>
