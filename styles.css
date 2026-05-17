@@ -354,8 +354,9 @@ button.nav-cta:hover {
   height: 0.9em;
   width: auto;
   flex: 0 0 auto;
-  transform: translateY(0.02em);
   filter: drop-shadow(0 4px 12px rgba(154, 123, 44, 0.16));
+  transform-origin: center;
+  animation: title-logo-drift 4.5s ease-in-out infinite;
 }
 
 .title-sub {
@@ -670,6 +671,11 @@ button.nav-cta:hover {
 @keyframes logo-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+
+@keyframes title-logo-drift {
+  0%, 100% { transform: translateY(0.02em) rotate(-2deg) scale(1); }
+  50% { transform: translateY(-0.08em) rotate(3deg) scale(1.04); }
 }
 
 @keyframes ring-pulse {
