@@ -49,6 +49,7 @@ OSCAR_REPO=FutureMLS-Lab/OSCAR OSCAR_PAGES_PATH=docs ./scripts/deploy-pages.sh
 ## Files
 
 - `index.html` — page structure and copy
-- `styles.css` — dark gold theme, glass cards, responsive layout
+- `intuition.html` — Appendix A.4 rotation intuition page
+- `styles.css` — light neutral/gold theme, cards, responsive layout
 - `app.js` — pipeline animation, particles, scroll reveals
 - `assets/` — logo, icons, paper PDF, figures

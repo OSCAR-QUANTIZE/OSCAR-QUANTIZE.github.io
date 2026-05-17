@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Intuition for OSCAR rotation factors: why U, Hadamard, and bit-reversal are composed for INT2 KV-cache quantization.">
+  <title>OSCAR — Rotation Intuition</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="intuition-page">
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
+  <canvas id="particles" aria-hidden="true"></canvas>
+
+  <header class="site-header">
+    <div class="nav-inner">
+      <a href="index.html#top" class="nav-brand">
+        <span class="nav-brand-wrap" aria-hidden="true">
+          <img src="assets/oscar_logo_kv_transparent.png" alt="" class="nav-logo">
+          <span class="nav-logo-ring"></span>
+        </span>
+        <span>OSCAR</span>
+      </a>
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links">
+        <a href="index.html#method">Method</a>
+        <a href="intuition.html">Intuition</a>
+        <a href="index.html#animation">Pipeline</a>
+        <a href="index.html#results">Results</a>
+        <a href="https://github.com/FutureMLS-Lab/OSCAR" target="_blank" rel="noopener" class="nav-cta">Code</a>
+        <a href="assets/paper.pdf" target="_blank" rel="noopener" class="nav-cta nav-cta-gold">Paper</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="section intuition-hero">
+      <div class="container">
+        <p class="callout-eyebrow reveal">Appendix A.4</p>
+        <h1 class="intuition-title reveal">Intuition for the OSCAR rotation</h1>
+        <p class="intuition-lead reveal">
+          OSCAR applies <code>R_K = U_Q H<sub>Had</sub> P_K</code> before INT2 quantization.
+          The three factors are ordered to address two coupled quantities: the attention-importance metric
+          <code>R<sup>⊤</sup>C_QR</code> and the token-wise INT2 residual covariance <code>E_K</code>.
+        </p>
+        <div class="intuition-equation reveal">
+          <code>||QK<sup>⊤</sup> - QK̂<sup>⊤</sup>||<sub>F</sub><sup>2</sup> = tr(R<sup>⊤</sup>C<sub>Q</sub>R · E<sub>K</sub>)</code>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt">
+      <div class="container">
+        <h2 class="section-title reveal">What each factor does</h2>
+        <div class="intuition-factor-grid reveal">
+          <article class="intuition-factor">
+            <span class="factor-tag">1</span>
+            <h3><code>U_Q</code>: expose attention importance</h3>
+            <p>
+              Eigendecomposing <code>C_Q = Q<sup>⊤</sup>Q = U_QΛ_QU_Q<sup>⊤</sup></code> makes the importance metric diagonal.
+              Error in channel <code>j</code> is weighted by <code>λ_j</code>, so high-query-energy directions are visible to the quantizer design.
+            </p>
+          </article>
+          <article class="intuition-factor">
+            <span class="factor-tag">2</span>
+            <h3><code>H<sub>Had</sub></code>: equalize and mix</h3>
+            <p>
+              After the <code>U_Q</code> basis, Hadamard conjugation gives
+              <code>diag(H<sup>⊤</sup>Λ_QH) = tr(C_Q)/d</code>. The same mixing also spreads per-token outliers across channels,
+              reducing the max-min range used by token-wise INT2 scaling.
+            </p>
+          </article>
+          <article class="intuition-factor">
+            <span class="factor-tag">3</span>
+            <h3><code>P_K</code>: balance quantization groups</h3>
+            <p>
+              Bit-reversal places large-eigenvalue directions into different contiguous groups. For power-of-two group sizes,
+              each group receives a balanced sample of the importance hierarchy rather than a cluster of hard-to-quantize directions.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container intuition-two-col">
+        <div class="reveal">
+          <h2 class="section-title section-title-left">Why not rotate by <code>K<sup>⊤</sup>K</code>?</h2>
+          <p class="intuition-copy">
+            The key cache is consumed through <code>QK<sup>⊤</sup></code>, not through raw Euclidean reconstruction of <code>K</code>.
+            On Qwen3-8B, the eigenbases of <code>Q<sup>⊤</sup>Q</code> and <code>K<sup>⊤</sup>K</code> are nearly uncorrelated.
+            A rotation that smooths key variance can therefore miss the directions where key error changes attention logits.
+          </p>
+          <p class="intuition-copy">
+            This is why OSCAR uses <code>Q<sup>⊤</sup>Q</code> for keys and <code>V<sup>⊤</sup>S<sup>⊤</sup>SV</code> for values.
+          </p>
+        </div>
+        <figure class="figure-block reveal">
+          <img src="assets/qk_alignment_layer16.png" alt="Q and K covariance eigenbasis alignment at layer 16" loading="lazy">
+          <figcaption>
+            <p class="fig-caption-title">Q/K eigenbasis alignment, Qwen3-8B layer 16</p>
+            <p>A diagonal-bright matrix would indicate shared eigenvectors. The observed near-uniform alignment means the raw key covariance basis is not a substitute for the query-importance basis.</p>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section section-alt">
+      <div class="container">
+        <h2 class="section-title reveal">Worked example from A.4</h2>
+        <p class="section-lead reveal">
+          Qwen3-4B-Thinking, layer 10, <code>d = 128</code>, key group size <code>G_K = 64</code>, 8000 calibration tokens.
+          The table shows what the token-wise INT2 quantizer sees after each candidate rotation.
+        </p>
+        <div class="table-wrap reveal">
+          <div class="table-scroll">
+            <table class="results-table intuition-table">
+              <thead>
+                <tr>
+                  <th>Rotation</th>
+                  <th>max |K̃|</th>
+                  <th>per-group max-min</th>
+                  <th>importance max/mean</th>
+                  <th>tr(E<sub>K</sub>)</th>
+                  <th>Interpretation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>I (no rotation)</td><td>36.3</td><td>25.7</td><td>43.0</td><td>233</td><td>large outliers and highly uneven importance</td></tr>
+                <tr><td>H<sub>Had</sub></td><td>11.1</td><td>13.3</td><td>1.72</td><td>206</td><td>outliers shrink, but importance is not exactly equalized</td></tr>
+                <tr><td>U<sub>Q</sub></td><td>29.4</td><td>22.4</td><td>46.9</td><td>1354</td><td>importance is exposed, but per-group range gets worse</td></tr>
+                <tr><td>U<sub>Q</sub>H<sub>Had</sub></td><td>7.46</td><td>13.4</td><td><strong>1.00</strong></td><td>208</td><td>importance diagonal is exactly equalized</td></tr>
+                <tr class="highlight-row"><td><strong>U<sub>Q</sub>H<sub>Had</sub>P<sub>K</sub> (OSCAR)</strong></td><td><strong>7.46</strong></td><td><strong>11.6</strong></td><td><strong>1.00</strong></td><td><strong>169</strong></td><td><strong>equalized importance plus lower INT2 residual</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p class="intuition-copy intuition-summary reveal">
+          The point is not that one factor is universally sufficient. <code>U_Q</code> gives the attention metric,
+          <code>H<sub>Had</sub></code> equalizes that metric and spreads token outliers, and <code>P_K</code> improves the actual group layout used by the INT2 kernel.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container intuition-cta reveal">
+        <h2>Back to the project page</h2>
+        <p>The main page contains the serving pipeline, accuracy table, and links to code, paper, and RotationZoo.</p>
+        <a href="index.html#top" class="btn btn-primary">Return to OSCAR</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <img src="assets/oscar_logo_kv_transparent.png" alt="" class="footer-logo">
+      <p>OSCAR — Offline Spectral Covariance-Aware Rotation for 2-bit KV Cache Quantization</p>
+      <div class="footer-links">
+        <a href="index.html#top">Home</a>
+        <a href="https://github.com/FutureMLS-Lab/OSCAR" target="_blank" rel="noopener">GitHub</a>
+        <a href="assets/paper.pdf" target="_blank" rel="noopener">Paper</a>
+        <a href="https://huggingface.co/Zhongzhu/OSCAR-RotationZoo" target="_blank" rel="noopener">RotationZoo</a>
+      </div>
+      <p class="footer-copy">&copy; 2026 OSCAR authors</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

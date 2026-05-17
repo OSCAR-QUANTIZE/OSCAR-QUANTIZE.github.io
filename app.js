@@ -24,6 +24,7 @@
   const autoPlayCheckbox = document.getElementById("autoPlay");
 
   function setStep(step) {
+    if (!panels.length) return;
     currentStep = ((step % panels.length) + panels.length) % panels.length;
     panels.forEach((p, i) => p.classList.toggle("active", i === currentStep));
     pipeBtns.forEach((b, i) => b.classList.toggle("active", i === currentStep));
@@ -70,21 +71,23 @@
     }
   }
 
-  pipeBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const step = parseInt(btn.dataset.step, 10);
-      setStep(step);
-      startAutoPlay();
+  if (panels.length) {
+    pipeBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const step = parseInt(btn.dataset.step, 10);
+        setStep(step);
+        startAutoPlay();
+      });
     });
-  });
 
-  autoPlayCheckbox?.addEventListener("change", () => {
-    if (autoPlayCheckbox.checked) startAutoPlay();
-    else stopAutoPlay();
-  });
+    autoPlayCheckbox?.addEventListener("change", () => {
+      if (autoPlayCheckbox.checked) startAutoPlay();
+      else stopAutoPlay();
+    });
 
-  setStep(0);
-  startAutoPlay();
+    setStep(0);
+    startAutoPlay();
+  }
 
   // --- Scroll reveal ---
   const revealEls = document.querySelectorAll(".reveal");
