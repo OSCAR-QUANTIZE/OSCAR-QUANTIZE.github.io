@@ -1782,6 +1782,22 @@ button.nav-cta:hover {
   color: var(--text);
 }
 
+.intuition-formula-note {
+  max-width: 58em;
+  margin: 0.9rem auto 0;
+  color: var(--text-muted);
+  font-size: 0.94rem;
+  line-height: 1.7;
+}
+
+.intuition-logic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
 .intuition-factor-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1835,6 +1851,23 @@ button.nav-cta:hover {
 .intuition-table td:last-child,
 .intuition-table th:last-child {
   min-width: 16rem;
+}
+
+.intuition-detail-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.intuition-detail-list p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  padding: 1rem;
+  border: 1px solid var(--figure-border);
+  border-radius: 12px;
+  background: var(--surface-panel);
+  box-shadow: 0 1px 3px rgba(26, 32, 44, 0.04);
 }
 
 .intuition-summary {
@@ -2060,7 +2093,9 @@ body.cite-modal-open {
   .hero-pipeline-logo { width: 64px; }
   .hero-mini-flow { grid-template-columns: repeat(3, 1fr); }
   .intuition-callout { flex-direction: column; align-items: flex-start; }
+  .intuition-logic-grid,
   .intuition-factor-grid,
+  .intuition-detail-list,
   .intuition-two-col {
     grid-template-columns: 1fr;
   }

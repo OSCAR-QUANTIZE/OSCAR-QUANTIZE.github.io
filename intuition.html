@@ -39,46 +39,50 @@
   <main id="top">
     <section class="section intuition-hero">
       <div class="container">
-        <p class="callout-eyebrow reveal">Appendix A.4</p>
-        <h1 class="intuition-title reveal">Intuition for the OSCAR rotation</h1>
+        <p class="callout-eyebrow reveal">Rotation intuition</p>
+        <h1 class="intuition-title reveal">Why OSCAR uses <code>U · H<sub>Had</sub> · P</code></h1>
         <p class="intuition-lead reveal">
-          OSCAR applies <code>R_K = U_Q H<sub>Had</sub> P_K</code> before INT2 quantization.
-          The three factors are ordered to address two coupled quantities: the attention-importance metric
-          <code>R<sup>⊤</sup>C_QR</code> and the token-wise INT2 residual covariance <code>E_K</code>.
+          OSCAR rotates each key row before INT2 quantization with
+          <code>R_K = U_Q H<sub>Had</sub> P_K</code>. The same construction is used for values with
+          <code>R_V = U_S H<sub>Had</sub> P_V</code>. These factors are not interchangeable:
+          <code>U</code> chooses the attention-relevant basis, <code>H<sub>Had</sub></code> equalizes and mixes that basis,
+          and <code>P</code> places the mixed channels into groups that the INT2 kernel can quantize stably.
         </p>
         <div class="intuition-equation reveal">
-          <code>||QK<sup>⊤</sup> - QK̂<sup>⊤</sup>||<sub>F</sub><sup>2</sup> = tr(R<sup>⊤</sup>C<sub>Q</sub>R · E<sub>K</sub>)</code>
+          <code>||QK<sup>⊤</sup> - QK̂<sup>⊤</sup>||<sub>F</sub><sup>2</sup> = tr(R<sub>K</sub><sup>⊤</sup>C<sub>Q</sub>R<sub>K</sub> · E<sub>K</sub>)</code>
         </div>
+        <p class="intuition-formula-note reveal">
+          Here <code>C_Q = Q<sup>⊤</sup>Q</code>, and <code>E_K</code> is the residual covariance of
+          <code>KR_K - Q<sub>2</sub>(KR_K)</code>. The rotation changes both terms: the attention-importance metric
+          and the distribution seen by the per-token, per-group INT2 quantizer.
+        </p>
       </div>
     </section>
 
     <section class="section section-alt">
       <div class="container">
-        <h2 class="section-title reveal">What each factor does</h2>
-        <div class="intuition-factor-grid reveal">
+        <h2 class="section-title reveal">The two jobs of the rotation</h2>
+        <p class="section-lead reveal">
+          A useful key rotation must do more than reduce raw <code>K</code> reconstruction error. It must reduce the
+          error after multiplication by <code>Q</code>, while also making token-wise INT2 scales less dominated by outlier channels.
+        </p>
+        <div class="intuition-logic-grid reveal">
           <article class="intuition-factor">
-            <span class="factor-tag">1</span>
-            <h3><code>U_Q</code>: expose attention importance</h3>
+            <span class="factor-tag">A</span>
+            <h3>Shape the attention metric</h3>
             <p>
-              Eigendecomposing <code>C_Q = Q<sup>⊤</sup>Q = U_QΛ_QU_Q<sup>⊤</sup></code> makes the importance metric diagonal.
-              Error in channel <code>j</code> is weighted by <code>λ_j</code>, so high-query-energy directions are visible to the quantizer design.
+              <code>R_K<sup>⊤</sup>C_QR_K</code> tells us how much quantization noise in each rotated coordinate
+              is amplified in the attention logits. Error in a high-query-energy direction is expensive; error in a
+              low-query-energy direction is much less visible.
             </p>
           </article>
           <article class="intuition-factor">
-            <span class="factor-tag">2</span>
-            <h3><code>H<sub>Had</sub></code>: equalize and mix</h3>
+            <span class="factor-tag">B</span>
+            <h3>Shape the quantizer residual</h3>
             <p>
-              After the <code>U_Q</code> basis, Hadamard conjugation gives
-              <code>diag(H<sup>⊤</sup>Λ_QH) = tr(C_Q)/d</code>. The same mixing also spreads per-token outliers across channels,
-              reducing the max-min range used by token-wise INT2 scaling.
-            </p>
-          </article>
-          <article class="intuition-factor">
-            <span class="factor-tag">3</span>
-            <h3><code>P_K</code>: balance quantization groups</h3>
-            <p>
-              Bit-reversal places large-eigenvalue directions into different contiguous groups. For power-of-two group sizes,
-              each group receives a balanced sample of the importance hierarchy rather than a cluster of hard-to-quantize directions.
+              <code>E_K</code> depends on the values that the INT2 quantizer sees. A single scale is fitted per token
+              and per group, so one large channel can expand the range and make the other channels in that group use
+              a much coarser quantization step.
             </p>
           </article>
         </div>
@@ -86,34 +90,124 @@
     </section>
 
     <section class="section">
+      <div class="container">
+        <h2 class="section-title reveal">What each factor contributes</h2>
+        <div class="intuition-factor-grid reveal">
+          <article class="intuition-factor">
+            <span class="factor-tag">1</span>
+            <h3><code>U_Q</code>: expose attention-importance directions</h3>
+            <p>
+              Eigendecompose <code>C_Q = U_QΛ_QU_Q<sup>⊤</sup></code>, with eigenvalues sorted from large to small.
+              If <code>R_K = U_Q</code>, the rotated importance metric becomes <code>Λ_Q</code>. Channel <code>j</code>
+              of <code>KU_Q</code> is the projection onto query principal direction <code>u_j</code>, and its noise is
+              weighted by <code>λ_j = ||Qu_j||<sub>2</sub><sup>2</sup></code>.
+            </p>
+            <p>
+              This is the right first step because it makes attention importance explicit. It is not sufficient by itself:
+              real LLM spectra are anisotropic, and after the eigenbasis rotation the large-variance coordinates can make
+              per-group min-max quantization worse.
+            </p>
+          </article>
+          <article class="intuition-factor">
+            <span class="factor-tag">2</span>
+            <h3><code>H<sub>Had</sub></code>: equalize importance and suppress outliers</h3>
+            <p>
+              Once <code>U_Q</code> diagonalizes the importance metric, normalized Hadamard mixing gives an exact invariant:
+              every diagonal entry of <code>H<sub>Had</sub><sup>⊤</sup>Λ_QH<sub>Had</sub></code> equals
+              <code>tr(C_Q)/d</code>. The peaky importance spectrum is replaced by a uniform diagonal.
+            </p>
+            <p>
+              The same Hadamard matrix also mixes each token across all channels with equal-magnitude signed weights.
+              A single principal-direction outlier is spread across many coordinates, reducing the max-min range that
+              determines the INT2 scale.
+            </p>
+          </article>
+          <article class="intuition-factor">
+            <span class="factor-tag">3</span>
+            <h3><code>P_K</code>: balance contiguous INT2 groups</h3>
+            <p>
+              The kernel quantizes contiguous groups of <code>G_K</code> channels. Hadamard mixing makes channels more uniform
+              marginally, but each group still needs a balanced sample of the importance hierarchy.
+            </p>
+            <p>
+              OSCAR uses permuted bit-reversal: the largest eigenvalue direction goes to position <code>0</code>, the second to
+              <code>64</code>, the third to <code>32</code>, the fourth to <code>96</code>, and so on for <code>d = 128</code>.
+              For any power-of-two group size, top directions are recursively spread across different groups instead of
+              being clustered in one quantization block.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt">
       <div class="container intuition-two-col">
         <div class="reveal">
-          <h2 class="section-title section-title-left">Why not rotate by <code>K<sup>⊤</sup>K</code>?</h2>
+          <h2 class="section-title section-title-left">Why <code>K<sup>⊤</sup>K</code> is not enough</h2>
           <p class="intuition-copy">
-            The key cache is consumed through <code>QK<sup>⊤</sup></code>, not through raw Euclidean reconstruction of <code>K</code>.
-            On Qwen3-8B, the eigenbases of <code>Q<sup>⊤</sup>Q</code> and <code>K<sup>⊤</sup>K</code> are nearly uncorrelated.
-            A rotation that smooths key variance can therefore miss the directions where key error changes attention logits.
+            A tempting alternative is to rotate keys by their own covariance. That optimizes the geometry of raw
+            <code>K</code>, but attention consumes keys through <code>QK<sup>⊤</sup></code>. A low raw reconstruction error
+            can still be harmful if it lands in directions heavily used by queries.
           </p>
           <p class="intuition-copy">
-            This is why OSCAR uses <code>Q<sup>⊤</sup>Q</code> for keys and <code>V<sup>⊤</sup>S<sup>⊤</sup>SV</code> for values.
+            Empirically, <code>Q<sup>⊤</sup>Q</code> and <code>K<sup>⊤</sup>K</code> do not share a useful eigenbasis. On Qwen3-8B,
+            the top-8 eigenvector self-alignment across layers is about <code>0.05–0.15</code>, close to random alignment
+            at <code>d = 128</code>. Rotating key covariance by <code>U_Q</code> can even reduce its diagonal concentration.
+          </p>
+          <p class="intuition-copy">
+            This is why OSCAR uses <code>Q<sup>⊤</sup>Q</code> for keys and
+            <code>V<sup>⊤</sup>S<sup>⊤</sup>SV</code> for values. The targets match the quantities consumed by attention:
+            logits for keys, and score-weighted value aggregation for values.
           </p>
         </div>
         <figure class="figure-block reveal">
           <img src="assets/qk_alignment_layer16.png" alt="Q and K covariance eigenbasis alignment at layer 16" loading="lazy">
           <figcaption>
             <p class="fig-caption-title">Q/K eigenbasis alignment, Qwen3-8B layer 16</p>
-            <p>A diagonal-bright matrix would indicate shared eigenvectors. The observed near-uniform alignment means the raw key covariance basis is not a substitute for the query-importance basis.</p>
+            <p>
+              A diagonal-bright alignment matrix would indicate shared eigenvectors. The near-uniform pattern means the
+              raw key covariance basis is not a substitute for the query-importance basis.
+            </p>
           </figcaption>
         </figure>
       </div>
     </section>
 
+    <section class="section">
+      <div class="container intuition-two-col">
+        <figure class="figure-block reveal">
+          <img src="assets/headline_four.png" alt="OSCAR error propagation through attention and layers" loading="lazy">
+          <figcaption>
+            <p class="fig-caption-title">The advantage appears after attention consumes the cache</p>
+            <p>
+              Raw cache reconstruction does not fully explain downstream quality. The gap is clearer in attention-score KL,
+              attention-block output error, and propagated hidden-state error.
+            </p>
+          </figcaption>
+        </figure>
+        <div class="reveal">
+          <h2 class="section-title section-title-left">Why downstream errors separate</h2>
+          <p class="intuition-copy">
+            OSCAR is not designed to minimize plain Euclidean MSE of <code>K</code> or <code>V</code>. Its targets are chosen
+            so that the quantization error is small after the operations that matter: <code>QK<sup>⊤</sup></code> for keys
+            and <code>SV</code> for values.
+          </p>
+          <p class="intuition-copy">
+            This explains why some baselines can look acceptable on raw tensor reconstruction but fail after attention.
+            A rotation can reduce visible outliers while still placing residual error in high-query-energy directions.
+            OSCAR aligns the basis with the attention metric first, then uses Hadamard and bit-reversal to make INT2 grouping viable.
+          </p>
+        </div>
+      </div>
+    </section>
+
     <section class="section section-alt">
       <div class="container">
-        <h2 class="section-title reveal">Worked example from A.4</h2>
+        <h2 class="section-title reveal">Worked example: Qwen3-4B-Thinking layer 10</h2>
         <p class="section-lead reveal">
-          Qwen3-4B-Thinking, layer 10, <code>d = 128</code>, key group size <code>G_K = 64</code>, 8000 calibration tokens.
-          The table shows what the token-wise INT2 quantizer sees after each candidate rotation.
+          This example uses <code>d = 128</code>, <code>G_K = 64</code>, 8000 calibration tokens, and the production
+          query covariance averaged over GQA groups. The table separates what the quantizer sees from how attention
+          weights the resulting residual.
         </p>
         <div class="table-wrap reveal">
           <div class="table-scroll">
@@ -129,23 +223,62 @@
                 </tr>
               </thead>
               <tbody>
-                <tr><td>I (no rotation)</td><td>36.3</td><td>25.7</td><td>43.0</td><td>233</td><td>large outliers and highly uneven importance</td></tr>
-                <tr><td>H<sub>Had</sub></td><td>11.1</td><td>13.3</td><td>1.72</td><td>206</td><td>outliers shrink, but importance is not exactly equalized</td></tr>
-                <tr><td>U<sub>Q</sub></td><td>29.4</td><td>22.4</td><td>46.9</td><td>1354</td><td>importance is exposed, but per-group range gets worse</td></tr>
-                <tr><td>U<sub>Q</sub>H<sub>Had</sub></td><td>7.46</td><td>13.4</td><td><strong>1.00</strong></td><td>208</td><td>importance diagonal is exactly equalized</td></tr>
+                <tr><td>I (no rotation)</td><td>36.3</td><td>25.7</td><td>43.0</td><td>233</td><td>large outliers and highly uneven attention importance</td></tr>
+                <tr><td>H<sub>Had</sub></td><td>11.1</td><td>13.3</td><td>1.72</td><td>206</td><td>outliers shrink, but the attention metric is not exactly equalized</td></tr>
+                <tr><td>U<sub>Q</sub></td><td>29.4</td><td>22.4</td><td>46.9</td><td>1354</td><td>importance is exposed, but the INT2 group range gets worse</td></tr>
+                <tr><td>U<sub>Q</sub>H<sub>Had</sub></td><td>7.46</td><td>13.4</td><td><strong>1.00</strong></td><td>208</td><td>Hadamard equalizes the diagonal importance metric exactly</td></tr>
                 <tr class="highlight-row"><td><strong>U<sub>Q</sub>H<sub>Had</sub>P<sub>K</sub> (OSCAR)</strong></td><td><strong>7.46</strong></td><td><strong>11.6</strong></td><td><strong>1.00</strong></td><td><strong>169</strong></td><td><strong>equalized importance plus lower INT2 residual</strong></td></tr>
               </tbody>
             </table>
           </div>
         </div>
-        <p class="intuition-copy intuition-summary reveal">
-          The point is not that one factor is universally sufficient. <code>U_Q</code> gives the attention metric,
-          <code>H<sub>Had</sub></code> equalizes that metric and spreads token outliers, and <code>P_K</code> improves the actual group layout used by the INT2 kernel.
-        </p>
+        <div class="intuition-detail-list reveal">
+          <p>
+            <strong>No rotation.</strong> One raw token has group ranges <code>44.81</code> and <code>7.19</code>; a few outliers set
+            the INT2 scale, so most coordinates in that group are quantized too coarsely.
+          </p>
+          <p>
+            <strong><code>U_Q</code> alone.</strong> The attention importance is now explicit, but K-side variance is pushed into
+            the eigenbasis unevenly. In the example, the difficult group flips: the second group range jumps to <code>37.85</code>.
+          </p>
+          <p>
+            <strong><code>U_QH<sub>Had</sub></code>.</strong> Hadamard spreads the spike across all channels and forces
+            <code>max/mean = 1.00</code> for the diagonal of the importance metric. The per-group ranges become nearly balanced.
+          </p>
+          <p>
+            <strong><code>U_QH<sub>Had</sub>P_K</code>.</strong> The permutation does not change the set of 128 values; it changes
+            which values share an INT2 group. Averaged across tokens, the mean per-group max-min drops from <code>13.40</code> to
+            <code>11.58</code>, reducing <code>tr(E_K)</code> from <code>208</code> to <code>169</code>.
+          </p>
+        </div>
       </div>
     </section>
 
     <section class="section">
+      <div class="container">
+        <h2 class="section-title reveal">Takeaway</h2>
+        <div class="intuition-factor-grid reveal">
+          <article class="intuition-factor">
+            <h3><code>U</code> gives the right metric</h3>
+            <p>It turns the attention-aware covariance into eigenvalue weights, so the rotation knows which directions matter to attention.</p>
+          </article>
+          <article class="intuition-factor">
+            <h3><code>H<sub>Had</sub></code> makes the metric usable</h3>
+            <p>It equalizes the importance diagonal exactly after <code>U</code> and spreads token-level outliers before INT2 scaling.</p>
+          </article>
+          <article class="intuition-factor">
+            <h3><code>P</code> makes grouping usable</h3>
+            <p>It balances high-importance directions across contiguous quantization groups; when <code>G_K = d</code>, this step becomes a no-op.</p>
+          </article>
+        </div>
+        <p class="intuition-copy intuition-summary reveal">
+          The value rotation follows the same logic with <code>C_S = V<sup>⊤</sup>S<sup>⊤</sup>SV</code>: choose the basis for the
+          quantity attention consumes, equalize and mix it, then lay it out for the low-bit group quantizer.
+        </p>
+      </div>
+    </section>
+
+    <section class="section section-tight">
       <div class="container intuition-cta reveal">
         <h2>Back to the project page</h2>
         <p>The main page contains the serving pipeline, accuracy table, and links to code, paper, and RotationZoo.</p>
