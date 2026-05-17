@@ -334,14 +334,27 @@ button.nav-cta:hover {
 }
 
 .title-line {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-size: clamp(2.8rem, 6vw, 4.2rem);
   font-weight: 700;
+  line-height: 1.1;
+}
+
+.title-text {
   background: linear-gradient(135deg, #7a5f10 0%, var(--gold) 45%, #c9a227 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  line-height: 1.1;
+}
+
+.title-logo-inline {
+  height: 0.9em;
+  width: auto;
+  flex: 0 0 auto;
+  transform: translateY(0.02em);
+  filter: drop-shadow(0 4px 12px rgba(154, 123, 44, 0.16));
 }
 
 .title-sub {
