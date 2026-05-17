@@ -89,178 +89,151 @@
             the mean gap to BF16 is 3.78, 1.42, −0.02, and +0.27 points respectively, while reducing KV memory by ~<strong>8×</strong>
             and increasing large-batch throughput by up to ~<strong>7×</strong>.
           </p>
-          <div class="hero-ctas">
-            <a href="https://github.com/FutureMLS-Lab/OSCAR" class="btn btn-primary" target="_blank" rel="noopener">
-              <svg class="icon-svg icon-svg-on-gold" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
-              GitHub Repo
-            </a>
-            <a href="assets/paper.pdf" class="btn btn-secondary" target="_blank" rel="noopener">
-              <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8 13h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
-              Read Paper
-            </a>
-            <a href="https://huggingface.co/Zhongzhu/OSCAR-RotationZoo" class="btn btn-outline" target="_blank" rel="noopener">
-              <img src="assets/huggingface_mark.png" alt="" class="icon-img icon-img-hf" width="22" height="22">
-              RotationZoo
-            </a>
-          </div>
-          <div class="hero-metrics">
-            <div class="metric-card">
-              <span class="metric-value">2.28</span>
-              <span class="metric-label">BPE</span>
-            </div>
-            <div class="metric-card">
-              <span class="metric-value">~8×</span>
-              <span class="metric-label">KV memory</span>
-            </div>
-            <div class="metric-card">
-              <span class="metric-value">~7×</span>
-              <span class="metric-label">throughput</span>
-            </div>
-            <div class="metric-card">
-              <span class="metric-value">128K</span>
-              <span class="metric-label">reasoning traces</span>
-            </div>
-          </div>
         </div>
         <div class="hero-visual hero-pipeline-visual reveal reveal-delay">
-          <div class="hero-pipeline-card">
-            <div class="hero-pipeline-head">
-              <img src="assets/oscar_logo_kv_transparent.png" alt="" class="hero-pipeline-logo">
-              <div>
-                <p class="hero-pipeline-eyebrow">Serving layout</p>
-                <h2>BF16 sink | INT2 history | BF16 recent</h2>
+          <div class="hero-pipeline-card" id="animation">
+            <div class="hero-action-card">
+              <div class="hero-ctas">
+                <a href="https://github.com/FutureMLS-Lab/OSCAR" class="btn btn-primary" target="_blank" rel="noopener">
+                  <svg class="icon-svg icon-svg-on-gold" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+                  GitHub Repo
+                </a>
+                <a href="assets/paper.pdf" class="btn btn-secondary" target="_blank" rel="noopener">
+                  <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8 13h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+                  Read Paper
+                </a>
+                <a href="https://huggingface.co/Zhongzhu/OSCAR-RotationZoo" class="btn btn-outline" target="_blank" rel="noopener">
+                  <img src="assets/huggingface_mark.png" alt="" class="icon-img icon-img-hf" width="22" height="22">
+                  RotationZoo
+                </a>
+              </div>
+              <div class="hero-metrics">
+                <div class="metric-card">
+                  <span class="metric-value">2.28</span>
+                  <span class="metric-label">BPE</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-value">~8×</span>
+                  <span class="metric-label">KV memory</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-value">~7×</span>
+                  <span class="metric-label">throughput</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-value">128K</span>
+                  <span class="metric-label">reasoning traces</span>
+                </div>
               </div>
             </div>
-            <div class="hero-cache-strip" aria-label="OSCAR mixed-precision KV cache layout">
-              <span class="hero-cache-seg hero-cache-bf16">sink</span>
-              <span class="hero-cache-seg hero-cache-int2">rotated INT2 history</span>
-              <span class="hero-cache-seg hero-cache-bf16">recent</span>
+
+            <div class="pipeline-wrap hero-pipeline-wrap">
+              <div class="hero-pipeline-title">
+                <p class="hero-pipeline-eyebrow">Quantization Pipeline</p>
+                <h2>Offline calibration -> online INT2 serving</h2>
+              </div>
+              <div class="pipeline-controls">
+                <button class="pipe-btn active" data-step="0">① Calibrate</button>
+                <button class="pipe-btn" data-step="1">② Build R</button>
+                <button class="pipe-btn" data-step="2">③ Cache layout</button>
+                <button class="pipe-btn" data-step="3">④ Quantize &amp; pack</button>
+                <button class="pipe-btn" data-step="4">⑤ Decode merge</button>
+                <label class="auto-play">
+                  <input type="checkbox" id="autoPlay" checked> Auto-play
+                </label>
+              </div>
+
+              <div class="pipeline-stage" id="pipelineStage">
+                <!-- Step 0: Calibrate -->
+                <div class="pipe-panel active" data-panel="0">
+                  <div class="pipe-visual calibrate-viz">
+                    <div class="token-stream token-q">Q</div>
+                    <div class="token-stream token-k">K</div>
+                    <div class="token-stream token-v">V</div>
+                    <div class="arrow-flow">→</div>
+                    <div class="cov-box">
+                      <div class="cov-item">C<sub>K</sub> = Q<sup>⊤</sup>Q</div>
+                      <div class="cov-item">C<sub>S</sub> = V<sup>⊤</sup>S<sup>⊤</sup>SV</div>
+                    </div>
+                  </div>
+                  <p class="pipe-desc">Run a calibration pass. Dump activations and compute attention-aware covariance targets per layer/head.</p>
+                </div>
+
+                <!-- Step 1: Build rotation -->
+                <div class="pipe-panel" data-panel="1">
+                  <div class="pipe-visual rotate-viz">
+                    <div class="rot-block">U<sub>Q</sub></div>
+                    <span class="rot-op">×</span>
+                    <div class="rot-block">H<sub>Had</sub></div>
+                    <span class="rot-op">×</span>
+                    <div class="rot-block">P<sub>br</sub></div>
+                    <span class="rot-op">=</span>
+                    <div class="rot-block rot-result">R<sub>K</sub>, R<sub>V</sub></div>
+                  </div>
+                  <p class="pipe-desc">Eigendecompose covariances, compose with Hadamard mixing and bit-reversal permutation, then fit token-wise clip thresholds.</p>
+                </div>
+
+                <!-- Step 2: Cache layout -->
+                <div class="pipe-panel" data-panel="2">
+                  <div class="pipe-visual cache-viz">
+                    <div class="cache-seg cache-sink">BF16 sink</div>
+                    <div class="cache-seg cache-int2">INT2 history</div>
+                    <div class="cache-seg cache-recent">BF16 recent</div>
+                    <div class="cache-cursor" id="cacheCursor"></div>
+                  </div>
+                  <p class="pipe-desc">Logical cache: <code>[1, S₀] ‖ [S₀+1, t−W] ‖ [t−W+1, t]</code>. New tokens land in recent; oldest recent demotes to INT2.</p>
+                </div>
+
+                <!-- Step 3: Quantize -->
+                <div class="pipe-panel" data-panel="3">
+                  <div class="pipe-visual quant-viz">
+                    <div class="vec-bar" id="vecBar">
+                      <span class="vec-val" style="--h:85%"></span>
+                      <span class="vec-val" style="--h:40%"></span>
+                      <span class="vec-val" style="--h:95%"></span>
+                      <span class="vec-val" style="--h:30%"></span>
+                      <span class="vec-val" style="--h:55%"></span>
+                      <span class="vec-val" style="--h:70%"></span>
+                      <span class="vec-val" style="--h:25%"></span>
+                      <span class="vec-val" style="--h:60%"></span>
+                    </div>
+                    <div class="quant-arrow">clip → INT2 → pack</div>
+                    <div class="byte-grid" id="byteGrid">
+                      <span class="bit-cell" data-level="0"></span>
+                      <span class="bit-cell" data-level="1"></span>
+                      <span class="bit-cell" data-level="2"></span>
+                      <span class="bit-cell" data-level="3"></span>
+                      <span class="bit-cell" data-level="1"></span>
+                      <span class="bit-cell" data-level="0"></span>
+                      <span class="bit-cell" data-level="3"></span>
+                      <span class="bit-cell" data-level="2"></span>
+                    </div>
+                    <p class="pack-label">4 × 2-bit values per byte</p>
+                  </div>
+                  <p class="pipe-desc"><code>k⁺ = Q₂⁺(clip(k·R<sub>K</sub>, τ))</code> — token-wise affine asymmetric INT2: each 2-bit code selects one of four reconstruction levels under the token/group scale and zero point.</p>
+                </div>
+
+                <!-- Step 4: Decode -->
+                <div class="pipe-panel" data-panel="4">
+                  <div class="pipe-visual decode-viz">
+                    <div class="decode-path decode-bf16">
+                      <span>BF16 kernel</span>
+                      <small>sink + recent</small>
+                    </div>
+                    <div class="decode-merge">⊕ merge</div>
+                    <div class="decode-path decode-int2">
+                      <span>INT2 kernel</span>
+                      <small>unpack · dequant · accumulate</small>
+                    </div>
+                    <div class="decode-out">Attention output</div>
+                  </div>
+                  <p class="pipe-desc">Two first-stage kernels over BF16 and INT2 segments; online softmax merge produces the same result as full-precision attention.</p>
+                </div>
+              </div>
+
+              <div class="step-indicator" id="stepIndicator">Step 1 / 5 — Calibrate</div>
             </div>
-            <div class="hero-mini-flow" aria-hidden="true">
-              <span>calibrate</span>
-              <span>build R</span>
-              <span>rotate</span>
-              <span>clip</span>
-              <span>pack</span>
-              <span>decode</span>
-            </div>
-            <p>
-              The same fixed rotations used in the paper are applied at serving time; only history tokens are demoted into INT2 pages.
-            </p>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Animation -->
-    <section class="section section-tight" id="animation">
-      <div class="container">
-        <h2 class="section-title reveal">Quantization Pipeline</h2>
-        <p class="section-lead reveal">
-          Offline calibration -> fixed rotations -> online rotate-clip-INT2 with mixed-precision cache layout.
-        </p>
-
-        <div class="pipeline-wrap reveal">
-          <div class="pipeline-controls">
-            <button class="pipe-btn active" data-step="0">① Calibrate</button>
-            <button class="pipe-btn" data-step="1">② Build R</button>
-            <button class="pipe-btn" data-step="2">③ Cache layout</button>
-            <button class="pipe-btn" data-step="3">④ Quantize &amp; pack</button>
-            <button class="pipe-btn" data-step="4">⑤ Decode merge</button>
-            <label class="auto-play">
-              <input type="checkbox" id="autoPlay" checked> Auto-play
-            </label>
-          </div>
-
-          <div class="pipeline-stage" id="pipelineStage">
-            <!-- Step 0: Calibrate -->
-            <div class="pipe-panel active" data-panel="0">
-              <div class="pipe-visual calibrate-viz">
-                <div class="token-stream token-q">Q</div>
-                <div class="token-stream token-k">K</div>
-                <div class="token-stream token-v">V</div>
-                <div class="arrow-flow">→</div>
-                <div class="cov-box">
-                  <div class="cov-item">C<sub>K</sub> = Q<sup>⊤</sup>Q</div>
-                  <div class="cov-item">C<sub>S</sub> = V<sup>⊤</sup>S<sup>⊤</sup>SV</div>
-                </div>
-              </div>
-              <p class="pipe-desc">Run a calibration pass. Dump activations and compute attention-aware covariance targets per layer/head.</p>
-            </div>
-
-            <!-- Step 1: Build rotation -->
-            <div class="pipe-panel" data-panel="1">
-              <div class="pipe-visual rotate-viz">
-                <div class="rot-block">U<sub>Q</sub></div>
-                <span class="rot-op">×</span>
-                <div class="rot-block">H<sub>Had</sub></div>
-                <span class="rot-op">×</span>
-                <div class="rot-block">P<sub>br</sub></div>
-                <span class="rot-op">=</span>
-                <div class="rot-block rot-result">R<sub>K</sub>, R<sub>V</sub></div>
-              </div>
-              <p class="pipe-desc">Eigendecompose covariances, compose with Hadamard mixing and bit-reversal permutation, then fit token-wise clip thresholds.</p>
-            </div>
-
-            <!-- Step 2: Cache layout -->
-            <div class="pipe-panel" data-panel="2">
-              <div class="pipe-visual cache-viz">
-                <div class="cache-seg cache-sink">BF16 sink</div>
-                <div class="cache-seg cache-int2">INT2 history</div>
-                <div class="cache-seg cache-recent">BF16 recent</div>
-                <div class="cache-cursor" id="cacheCursor"></div>
-              </div>
-              <p class="pipe-desc">Logical cache: <code>[1, S₀] ‖ [S₀+1, t−W] ‖ [t−W+1, t]</code>. New tokens land in recent; oldest recent demotes to INT2.</p>
-            </div>
-
-            <!-- Step 3: Quantize -->
-            <div class="pipe-panel" data-panel="3">
-              <div class="pipe-visual quant-viz">
-                <div class="vec-bar" id="vecBar">
-                  <span class="vec-val" style="--h:85%"></span>
-                  <span class="vec-val" style="--h:40%"></span>
-                  <span class="vec-val" style="--h:95%"></span>
-                  <span class="vec-val" style="--h:30%"></span>
-                  <span class="vec-val" style="--h:55%"></span>
-                  <span class="vec-val" style="--h:70%"></span>
-                  <span class="vec-val" style="--h:25%"></span>
-                  <span class="vec-val" style="--h:60%"></span>
-                </div>
-                <div class="quant-arrow">clip → INT2 → pack</div>
-                <div class="byte-grid" id="byteGrid">
-                  <span class="bit-cell" data-level="0"></span>
-                  <span class="bit-cell" data-level="1"></span>
-                  <span class="bit-cell" data-level="2"></span>
-                  <span class="bit-cell" data-level="3"></span>
-                  <span class="bit-cell" data-level="1"></span>
-                  <span class="bit-cell" data-level="0"></span>
-                  <span class="bit-cell" data-level="3"></span>
-                  <span class="bit-cell" data-level="2"></span>
-                </div>
-                <p class="pack-label">4 × 2-bit values per byte</p>
-              </div>
-              <p class="pipe-desc"><code>k⁺ = Q₂⁺(clip(k·R<sub>K</sub>, τ))</code> — token-wise affine asymmetric INT2: each 2-bit code selects one of four reconstruction levels under the token/group scale and zero point.</p>
-            </div>
-
-            <!-- Step 4: Decode -->
-            <div class="pipe-panel" data-panel="4">
-              <div class="pipe-visual decode-viz">
-                <div class="decode-path decode-bf16">
-                  <span>BF16 kernel</span>
-                  <small>sink + recent</small>
-                </div>
-                <div class="decode-merge">⊕ merge</div>
-                <div class="decode-path decode-int2">
-                  <span>INT2 kernel</span>
-                  <small>unpack · dequant · accumulate</small>
-                </div>
-                <div class="decode-out">Attention output</div>
-              </div>
-              <p class="pipe-desc">Two first-stage kernels over BF16 and INT2 segments; online softmax merge produces the same result as full-precision attention.</p>
-            </div>
-          </div>
-
-          <div class="step-indicator" id="stepIndicator">Step 1 / 5 — Calibrate</div>
         </div>
       </div>
     </section>

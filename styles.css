@@ -264,15 +264,15 @@ button.nav-cta:hover {
 
 /* Hero */
 .hero {
-  padding: 4rem 0 5rem;
+  padding: 3.25rem 0 4rem;
   position: relative;
   z-index: 1;
 }
 
 .hero-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 2.5rem;
   align-items: center;
 }
 
@@ -476,12 +476,76 @@ button.nav-cta:hover {
 }
 
 .hero-pipeline-card {
-  width: min(520px, 100%);
+  width: min(640px, 100%);
   background: var(--bg-card);
   border: 1px solid var(--figure-border);
   border-radius: calc(var(--radius) + 6px);
   padding: 1.25rem;
   box-shadow: var(--shadow);
+}
+
+.hero-action-card {
+  margin-bottom: 1rem;
+}
+
+.hero-action-card .hero-ctas {
+  margin-bottom: 0.9rem;
+}
+
+.hero-action-card .hero-metrics {
+  margin-bottom: 0;
+}
+
+.hero-pipeline-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.hero-pipeline-title h2 {
+  font-family: var(--font-display);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.25;
+  text-align: right;
+}
+
+.hero-pipeline-wrap {
+  padding: 1rem;
+  box-shadow: none;
+}
+
+.hero-pipeline-wrap .pipeline-controls {
+  margin-bottom: 0.8rem;
+}
+
+.hero-pipeline-wrap .pipe-btn {
+  padding: 0.38rem 0.62rem;
+  font-size: 0.76rem;
+}
+
+.hero-pipeline-wrap .auto-play {
+  font-size: 0.78rem;
+}
+
+.hero-pipeline-wrap .pipeline-stage {
+  min-height: 205px;
+}
+
+.hero-pipeline-wrap .pipe-visual {
+  min-height: 116px;
+  padding: 0.75rem;
+}
+
+.hero-pipeline-wrap .pipe-desc {
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.hero-pipeline-wrap .step-indicator {
+  font-size: 0.78rem;
 }
 
 .hero-pipeline-head {
