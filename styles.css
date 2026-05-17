@@ -519,6 +519,7 @@ button.nav-cta:hover {
 
 .hero-pipeline-wrap .pipeline-controls {
   margin-bottom: 0.8rem;
+  flex-wrap: nowrap;
 }
 
 .hero-pipeline-wrap .pipe-btn {
@@ -1146,6 +1147,7 @@ button.nav-cta:hover {
   cursor: pointer;
   transition: all var(--transition);
   font-family: var(--font-body);
+  white-space: nowrap;
 }
 
 .pipe-btn:hover,
@@ -2127,6 +2129,7 @@ body.cite-modal-open {
 
   .nav-links.open { display: flex; }
 
+  .hero-pipeline-wrap .pipeline-controls { flex-wrap: wrap; }
   .auto-play { margin-left: 0; width: 100%; }
 
   .decode-viz { flex-direction: column; }

@@ -29,7 +29,7 @@
     panels.forEach((p, i) => p.classList.toggle("active", i === currentStep));
     pipeBtns.forEach((b, i) => b.classList.toggle("active", i === currentStep));
     if (stepIndicator) {
-      stepIndicator.textContent = `Step ${currentStep + 1} / ${panels.length} — ${STEP_LABELS[currentStep]}`;
+      stepIndicator.textContent = STEP_LABELS[currentStep];
     }
     runStepEffects(currentStep);
   }
