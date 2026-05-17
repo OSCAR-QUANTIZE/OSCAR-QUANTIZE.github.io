@@ -543,10 +543,6 @@ button.nav-cta:hover {
   font-size: 0.76rem;
 }
 
-.hero-pipeline-wrap .auto-play {
-  font-size: 0.78rem;
-}
-
 .hero-pipeline-wrap .pipeline-stage {
   min-height: 205px;
 }
@@ -1171,16 +1167,6 @@ button.nav-cta:hover {
   background: rgba(201, 162, 39, 0.15);
   color: var(--gold-light);
   border-color: var(--gold-dim);
-}
-
-.auto-play {
-  margin-left: auto;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  cursor: pointer;
 }
 
 .pipeline-stage {
@@ -2217,7 +2203,6 @@ body.cite-modal-open {
   .nav-links.open { display: flex; }
 
   .hero-pipeline-wrap .pipeline-controls { flex-wrap: wrap; }
-  .auto-play { margin-left: 0; width: 100%; }
 
   .decode-viz { flex-direction: column; }
 

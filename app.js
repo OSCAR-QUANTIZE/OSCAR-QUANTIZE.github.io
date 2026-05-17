@@ -58,9 +58,13 @@
     setStep(currentStep + 1);
   }
 
+  function shouldAutoPlay() {
+    return autoPlayCheckbox ? autoPlayCheckbox.checked : true;
+  }
+
   function startAutoPlay() {
     stopAutoPlay();
-    if (!autoPlayCheckbox?.checked || reducedMotion) return;
+    if (!shouldAutoPlay() || reducedMotion) return;
     autoTimer = setInterval(nextStep, STEP_INTERVAL_MS);
   }
 
@@ -271,6 +275,6 @@
   // Pause pipeline when tab hidden
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) stopAutoPlay();
-    else if (autoPlayCheckbox?.checked) startAutoPlay();
+    else if (shouldAutoPlay()) startAutoPlay();
   });
 })();
