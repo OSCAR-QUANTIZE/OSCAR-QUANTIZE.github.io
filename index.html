@@ -164,8 +164,8 @@
       <div class="container">
         <h2 class="section-title reveal">The OSCAR Recipe</h2>
         <p class="section-lead reveal">
-          Three ingredients recover most of the quality naive INT2 loses — without fragile per-layer tricks.
-          The full pipeline has an offline calibration phase and an online serving phase.
+          OSCAR separates calibration from serving: fixed rotations and clip thresholds are computed offline,
+          then the online path stores the long-history KV cache in INT2 while preserving a small BF16 window.
         </p>
 
         <figure class="pipeline-figure reveal">
@@ -195,7 +195,7 @@
           <article class="recipe-card">
             <span class="recipe-num">03</span>
             <h3>SGLang INT2 serving</h3>
-            <p>Fused Triton kernels rotate, clip, quantize, pack (4×2-bit/byte), and merge with paged attention — production-ready.</p>
+            <p>Fused Triton kernels rotate, clip, quantize, and pack K/V rows (4×2-bit values per byte); the decode path is compatible with SGLang paged attention.</p>
           </article>
         </div>
 
@@ -354,7 +354,7 @@
                 </div>
                 <p class="pack-label">4 × 2-bit values per byte</p>
               </div>
-              <p class="pipe-desc"><code>k⁺ = Q₂⁺(clip(k·R<sub>K</sub>, τ))</code> — affine asymmetric INT2 with scale/zero, four levels per channel group.</p>
+              <p class="pipe-desc"><code>k⁺ = Q₂⁺(clip(k·R<sub>K</sub>, τ))</code> — token-wise affine asymmetric INT2: each 2-bit code selects one of four reconstruction levels under the token/group scale and zero point.</p>
             </div>
 
             <!-- Step 4: Decode -->
@@ -385,7 +385,7 @@
       <div class="container">
         <h2 class="section-title reveal">Production Serving Path</h2>
         <p class="section-lead reveal">
-          OSCAR is not just a quantizer — it is a complete SGLang INT2 KV-cache mode compatible with paged attention and prefix caching.
+          OSCAR implements an SGLang INT2 KV-cache mode for paged attention and prefix caching.
         </p>
         <div class="system-diagram reveal">
           <svg viewBox="0 0 800 220" class="system-svg" aria-label="OSCAR serving diagram">
@@ -417,7 +417,7 @@
           <li>Fused rotate–clip–quantize–pack during prefill and decode demotion</li>
           <li>Value rotation absorbed into projection weights for compute savings</li>
           <li>FlashAttention-3 prefill + Triton INT2 decode hybrid mode</li>
-          <li>Compatible with vLLM-style paged KV and SGLang prefix cache</li>
+          <li>Compatible with SGLang paged attention and prefix cache</li>
         </ul>
       </div>
     </section>
@@ -558,14 +558,14 @@
         </div>
         <p class="compare-note reveal">
           TurboQuant solves generic online vector quantization. OSCAR solves attention-aware 2-bit KV-cache serving.
-          Both are useful — they optimize different targets.
+          The two methods optimize different quantities and assume different serving layouts.
         </p>
 
         <div class="compat-panel reveal">
           <h3>Are OSCAR and TurboQuant compatible?</h3>
           <p class="compat-lead">
-            <strong>Conceptually, yes</strong> — but <strong>not as a plug-and-play substitution</strong>.
-            They address overlapping ideas (rotation + low-bit quantization) with different objectives, assumptions, and serving stacks.
+            <strong>Conceptually, yes</strong> — but the interfaces do not match today.
+            TurboQuant exposes a generic online quantizer; OSCAR fixes the KV layout, BF16 windows, and SGLang decode kernels around its rotation target.
           </p>
 
           <div class="compat-grid">
@@ -582,7 +582,7 @@
             <article class="compat-card compat-card-oscar">
               <h4>OSCAR</h4>
               <ul>
-                <li>Attention-aware <em>2-bit KV-cache serving</em> framework</li>
+                <li>Attention-aware <em>2-bit KV-cache serving</em> method</li>
                 <li>Offline covariance-aware rotations (<code>Q<sup>⊤</sup>Q</code>, <code>V<sup>⊤</sup>S<sup>⊤</sup>SV</code>)</li>
                 <li>BF16 sink + recent protection + INT2 history layout</li>
                 <li>Full SGLang / Triton path with paged KV</li>
@@ -598,11 +598,11 @@
             </p>
             <p><strong>What does not drop in today:</strong>
               Swapping one method for the other would require new kernels, revised bit accounting (effective BPE),
-              and fresh end-to-end validation — the strongest theoretical assumptions of each approach are not automatically composable.
+              and new accuracy/throughput measurements for the resulting cache layout.
             </p>
             <p class="compat-bottom">
-              Bottom line: the methods are <strong>complementary research directions</strong>, not interchangeable modules.
-              TurboQuant is the right tool for generic vector quantization; OSCAR is the right tool when the goal is deployable INT2 KV-cache serving for long-context LLMs.
+              In the current implementations, they are <strong>not interchangeable modules</strong>.
+              TurboQuant targets generic vector quantization; OSCAR fixes the rotation target, BF16 windows, INT2 cache layout, and SGLang kernels as one serving path.
             </p>
           </div>
         </div>
