@@ -447,6 +447,7 @@ button.nav-cta:hover {
 
 .metric-label {
   font-size: 0.64rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
