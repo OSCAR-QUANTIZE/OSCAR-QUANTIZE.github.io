@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OSCAR: Offline Spectral Covariance-Aware Rotation for 2-bit KV Cache Quantization — attention-aware INT2 KV-cache serving for long-context LLMs.">
+  <title>OSCAR — 2-bit KV Cache Quantization</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
+  <canvas id="particles" aria-hidden="true"></canvas>
+
+  <header class="site-header">
+    <div class="nav-inner">
+      <a href="#top" class="nav-brand">
+        <span class="nav-brand-wrap" aria-hidden="true">
+          <img src="assets/oscar_logo_kv_transparent.png" alt="" class="nav-logo">
+          <span class="nav-logo-ring"></span>
+        </span>
+        <span>OSCAR</span>
+      </a>
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links">
+        <a href="#method">Method</a>
+        <a href="#animation">Pipeline</a>
+        <a href="#system">System</a>
+        <a href="#results">Results</a>
+        <a href="https://github.com/FutureMLS-Lab/OSCAR" target="_blank" rel="noopener" class="nav-cta">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+          Code
+        </a>
+        <a href="assets/paper.pdf" target="_blank" rel="noopener" class="nav-cta nav-cta-gold">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8 13h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+          Paper
+        </a>
+        <a href="https://huggingface.co/Zhongzhu/OSCAR-RotationZoo" target="_blank" rel="noopener" class="nav-cta">
+          <img src="assets/huggingface_mark.png" alt="" class="icon-img icon-img-hf" width="22" height="22">
+          RotationZoo
+        </a>
+        <button type="button" class="nav-cta cite-trigger" aria-haspopup="dialog" aria-controls="citeModal">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm2 2v2h10V5H7zm0 4v10h10V9H7zm2 2h6v2H9v-2z"/></svg>
+          Cite
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-content reveal">
+          <h1>
+            <span class="title-line">OSCAR</span>
+            <span class="title-sub">Offline Spectral Covariance-Aware Rotation<br>for <em>2-bit</em> KV Cache Quantization</span>
+          </h1>
+
+          <div class="authors-block reveal">
+            <p class="authors">
+              Zhongzhu Zhou<sup>*1,2</sup>,
+              Donglin Zhuang<sup>*1,2</sup>,
+              Jisen Li<sup>1,3</sup>,
+              Ziyan Chen<sup>2</sup><br>
+              Shuaiwen Leon Song<sup>1</sup>,
+              Ben Athiwaratkun<sup>1</sup>,
+              Xiaoxia Wu<sup>†1</sup>
+            </p>
+            <p class="affiliations">
+              <sup>1</sup>Together AI &nbsp;&nbsp;
+              <sup>2</sup>University of Sydney &nbsp;&nbsp;
+              <sup>3</sup>University of Illinois Urbana-Champaign
+            </p>
+            <p class="author-notes">
+              <sup>*</sup>Equal contribution. &nbsp;
+              <sup>†</sup>Corresponding author.
+            </p>
+          </div>
+
+          <p class="hero-lead">
+            <strong>True INT2 KV-cache serving</strong> for long-context reasoning LLMs: attention-aware fixed rotations,
+            BF16 sink/recent protection, and SGLang-ready kernels at <strong>2.28 effective bits</strong> per KV element.
+            On <strong>Qwen3-4B-Thinking</strong>, <strong>Qwen3-8B</strong>, <strong>Qwen3-32B</strong>, and <strong>GLM-4.7-FP8</strong>,
+            mean reasoning &amp; coding accuracy stays within a few points of BF16
+            (≤3.8 pts on 4B, ≤1.4 on 8B; tied on 32B &amp; GLM) — with ~<strong>8×</strong> KV memory savings and up to ~<strong>7×</strong> throughput.
+          </p>
+          <div class="hero-ctas">
+            <a href="https://github.com/FutureMLS-Lab/OSCAR" class="btn btn-primary" target="_blank" rel="noopener">
+              <svg class="icon-svg icon-svg-on-gold" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+              GitHub Repo
+            </a>
+            <a href="assets/paper.pdf" class="btn btn-secondary" target="_blank" rel="noopener">
+              <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8 13h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+              Read Paper
+            </a>
+            <a href="https://huggingface.co/Zhongzhu/OSCAR-RotationZoo" class="btn btn-outline" target="_blank" rel="noopener">
+              <img src="assets/huggingface_mark.png" alt="" class="icon-img icon-img-hf" width="22" height="22">
+              RotationZoo
+            </a>
+          </div>
+          <div class="hero-metrics">
+            <div class="metric-card">
+              <span class="metric-value">2.28</span>
+              <span class="metric-label">BPE</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-value">~8×</span>
+              <span class="metric-label">KV memory</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-value">~7×</span>
+              <span class="metric-label">throughput</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-value">128K</span>
+              <span class="metric-label">reasoning traces</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-visual reveal reveal-delay">
+          <div class="logo-frame">
+            <img src="assets/oscar_logo_kv_transparent.png" alt="OSCAR logo — K/V 2-bit cache" class="hero-logo">
+            <div class="logo-ring"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Problem -->
+    <section class="section" id="problem">
+      <div class="container">
+        <h2 class="section-title reveal">Why 2-bit KV Cache Is Hard</h2>
+        <p class="section-lead reveal">
+          KV activations have severe channel-wise outliers. At INT2, only four quantization levels exist —
+          outliers dominate the scale and crush normal values. Generic Hadamard rotations smooth outliers
+          but remain <strong>data-oblivious</strong>: they do not know which directions attention actually reads.
+        </p>
+        <div class="pillars reveal">
+          <article class="glass-card">
+            <div class="card-icon">⚡</div>
+            <h3>Outlier-dominated scale</h3>
+            <p>A few extreme channels set the min-max range; most values collapse into useless INT2 bins.</p>
+          </article>
+          <article class="glass-card">
+            <div class="card-icon">↻</div>
+            <h3>Rotation alone is not enough</h3>
+            <p>Random or Hadamard rotations scatter energy but miss attention-important directions.</p>
+          </article>
+          <article class="glass-card">
+            <div class="card-icon">◎</div>
+            <h3>Attention consumes correlations</h3>
+            <p>Keys enter via <code>QK<sup>⊤</sup></code>; values via score-weighted outputs — not raw Euclidean reconstruction.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Method -->
+    <section class="section section-alt" id="method">
+      <div class="container">
+        <h2 class="section-title reveal">The OSCAR Recipe</h2>
+        <p class="section-lead reveal">
+          Three ingredients recover most of the quality naive INT2 loses — without fragile per-layer tricks.
+          The full pipeline has an offline calibration phase and an online serving phase.
+        </p>
+
+        <figure class="pipeline-figure reveal">
+          <img src="assets/oscar_pipeline.png" alt="OSCAR pipeline overview: offline calibration and online INT2 serving" class="pipeline-img" loading="lazy">
+          <figcaption>
+            <strong>OSCAR pipeline overview.</strong>
+            <em>Offline:</em> estimate attention-aware key/value covariances, build fixed rotations
+            (<code>R = U · H<sub>Had</sub> · P<sub>br</sub></code>), and fit clipping thresholds — Hadamard mixing flattens raw outlier peaks while OSCAR rotations align quantization with attention.
+            <em>Online:</em> keep sink and recent tokens in BF16; apply rotate–clip–INT2 to history KV inside a paged SGLang cache.
+            Right panels: accuracy preserved across models with throughput near QuaRot(INT2) and well above BF16.
+          </figcaption>
+        </figure>
+
+        <div class="recipe-grid reveal">
+          <article class="recipe-card">
+            <span class="recipe-num">01</span>
+            <h3>Attention-aware rotations</h3>
+            <p>Offline calibration estimates <code>C<sub>K</sub> = Q<sup>⊤</sup>Q</code> for keys and
+               <code>C<sub>S</sub> = V<sup>⊤</sup>S<sup>⊤</sup>SV</code> for values, then builds
+               <code>R = U · H<sub>Had</sub> · P<sub>br</sub></code>.</p>
+          </article>
+          <article class="recipe-card">
+            <span class="recipe-num">02</span>
+            <h3>BF16 sink &amp; recent</h3>
+            <p>Protect attention sinks and a sliding recent window in full precision while the long history lives in INT2.</p>
+          </article>
+          <article class="recipe-card">
+            <span class="recipe-num">03</span>
+            <h3>SGLang INT2 serving</h3>
+            <p>Fused Triton kernels rotate, clip, quantize, pack (4×2-bit/byte), and merge with paged attention — production-ready.</p>
+          </article>
+        </div>
+
+        <div class="target-matters-panel reveal">
+          <div class="target-matters-intro">
+            <h3>Rotation target matters</h3>
+            <p>
+              A generic rotation can smooth outliers, but keys and values enter attention through different statistics.
+              OSCAR aligns rotations to <code>Q<sup>⊤</sup>Q</code> (keys) and <code>V<sup>⊤</sup>S<sup>⊤</sup>SV</code> (values) rather than raw cache reconstruction.
+            </p>
+            <p class="muted">The question is not “rotation or no rotation?” — it is <em>what is the rotation aligned to?</em></p>
+            <p class="ablation-setup">
+              <strong>Setup.</strong> <strong>Qwen3-8B</strong>, same INT2 KV budget (sink&nbsp;64 + recent&nbsp;256, calibration-derived clip).
+              Each number is the <strong>unweighted mean pass@1 accuracy (%)</strong> over five benchmarks:
+              GPQA, HumanEval, LiveCodeBench&nbsp;v6, AIME&nbsp;2025, and MATH-500 (3 seeds in the paper).
+            </p>
+            <div class="ablation-grid" aria-label="Rotation target ablation on Qwen3-8B: mean accuracy over five benchmarks">
+              <div class="ablation-card ablation-best">
+                <span class="ablation-label">Full OSCAR</span>
+                <span class="ablation-value">70.01</span>
+                <span class="ablation-sub">Attention-aware <em>U</em> · Hadamard · bit-reversal</span>
+              </div>
+              <div class="ablation-card">
+                <span class="ablation-label">Tensor-reconstruction target</span>
+                <span class="ablation-value">31.12</span>
+                <span class="ablation-sub"><em>U</em> from <em>K</em><sup>⊤</sup><em>K</em> / <em>V</em><sup>⊤</sup><em>V</em> instead</span>
+              </div>
+              <div class="ablation-card">
+                <span class="ablation-label">w/o attention-aware <em>U</em></span>
+                <span class="ablation-value">32.82</span>
+                <span class="ablation-sub">Hadamard + bit-reversal only (QuaRot-style)</span>
+              </div>
+              <div class="ablation-card">
+                <span class="ablation-label">No rotation</span>
+                <span class="ablation-value">4.23</span>
+                <span class="ablation-sub">Clip + sink/recent only</span>
+              </div>
+            </div>
+            <p class="ablation-note fig-caption-note">
+              Only the rotation target / composition changes; everything else matches full OSCAR. FP16 reference mean on these five tasks: 68.83%.
+            </p>
+          </div>
+          <div class="figures-stack">
+            <figure class="figure-block">
+              <img src="assets/headline_four.png" alt="Quantization error at every pipeline stage" loading="lazy">
+              <figcaption>
+                <p class="fig-caption-title">OSCAR limits quantization error at every stage</p>
+                <p class="fig-caption-meta">Qwen3-4B-Thinking-2507, AIME</p>
+                <ul class="fig-caption-panels">
+                  <li><span class="panel-tag">(a)</span> Relative MSE in quantized <em>K</em> / <em>V</em> caches (keys solid, values dashed).</li>
+                  <li><span class="panel-tag">(b)</span> KL(<em>p</em><sub>FP16</sub> ∥ <em>p</em><sub>q</sub>) between FP16 and quantized attention-score distributions.</li>
+                  <li><span class="panel-tag">(c)</span> Relative MSE at the attention-block output (post-<em>W</em><sub>O</sub>).</li>
+                  <li><span class="panel-tag">(d)</span> Relative MSE in propagated hidden states across layers.</li>
+                </ul>
+                <p class="fig-caption-note">Naive INT2, Hadamard-only, and clip-only baselines diverge in (b)–(d); full OSCAR stays closest to FP16.</p>
+              </figcaption>
+            </figure>
+
+            <figure class="figure-block">
+              <img src="assets/qk_alignment_layer16.png" alt="Query and key covariance structure at layer 16" loading="lazy">
+              <figcaption>
+                <p class="fig-caption-title">Why a generic rotation is not enough</p>
+                <p class="fig-caption-meta">Layer 16, Qwen3-8B (representative)</p>
+                <p>Left: heatmaps of <em>Q<sup>⊤</sup>Q</em> and <em>K<sup>⊤</sup>K</em>. Center: eigenvalue spectra (both low-rank, different decay). Right: |<em>U<sub>Q</sub><sup>⊤</sup> U<sub>K</sub></em>| eigenvector alignment (1 = aligned). A bright diagonal would mean shared eigenbases; the near-uniform pattern shows <em>Q</em> and <em>K</em> directions are nearly uncorrelated — rotating only for <em>K<sup>⊤</sup>K</em> outliers misses what attention reads via <em>Q<sup>⊤</sup>Q</em>.</p>
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Animation -->
+    <section class="section" id="animation">
+      <div class="container">
+        <h2 class="section-title reveal">Quantization Pipeline</h2>
+        <p class="section-lead reveal">
+          Offline calibration → fixed rotations → online rotate–clip–INT2 with mixed-precision cache layout.
+        </p>
+
+        <div class="pipeline-wrap reveal">
+          <div class="pipeline-controls">
+            <button class="pipe-btn active" data-step="0">① Calibrate</button>
+            <button class="pipe-btn" data-step="1">② Build R</button>
+            <button class="pipe-btn" data-step="2">③ Cache layout</button>
+            <button class="pipe-btn" data-step="3">④ Quantize &amp; pack</button>
+            <button class="pipe-btn" data-step="4">⑤ Decode merge</button>
+            <label class="auto-play">
+              <input type="checkbox" id="autoPlay" checked> Auto-play
+            </label>
+          </div>
+
+          <div class="pipeline-stage" id="pipelineStage">
+            <!-- Step 0: Calibrate -->
+            <div class="pipe-panel active" data-panel="0">
+              <div class="pipe-visual calibrate-viz">
+                <div class="token-stream token-q">Q</div>
+                <div class="token-stream token-k">K</div>
+                <div class="token-stream token-v">V</div>
+                <div class="arrow-flow">→</div>
+                <div class="cov-box">
+                  <div class="cov-item">C<sub>K</sub> = Q<sup>⊤</sup>Q</div>
+                  <div class="cov-item">C<sub>S</sub> = V<sup>⊤</sup>S<sup>⊤</sup>SV</div>
+                </div>
+              </div>
+              <p class="pipe-desc">Run a lightweight calibration pass. Dump activations, compute attention-aware covariance targets per layer/head.</p>
+            </div>
+
+            <!-- Step 1: Build rotation -->
+            <div class="pipe-panel" data-panel="1">
+              <div class="pipe-visual rotate-viz">
+                <div class="rot-block">U<sub>Q</sub></div>
+                <span class="rot-op">×</span>
+                <div class="rot-block">H<sub>Had</sub></div>
+                <span class="rot-op">×</span>
+                <div class="rot-block">P<sub>br</sub></div>
+                <span class="rot-op">=</span>
+                <div class="rot-block rot-result">R<sub>K</sub>, R<sub>V</sub></div>
+              </div>
+              <p class="pipe-desc">Eigendecompose covariances, compose with Hadamard mixing and bit-reversal permutation. Fit per-token clip thresholds.</p>
+            </div>
+
+            <!-- Step 2: Cache layout -->
+            <div class="pipe-panel" data-panel="2">
+              <div class="pipe-visual cache-viz">
+                <div class="cache-seg cache-sink">BF16 sink</div>
+                <div class="cache-seg cache-int2">INT2 history</div>
+                <div class="cache-seg cache-recent">BF16 recent</div>
+                <div class="cache-cursor" id="cacheCursor"></div>
+              </div>
+              <p class="pipe-desc">Logical cache: <code>[1, S₀] ‖ [S₀+1, t−W] ‖ [t−W+1, t]</code>. New tokens land in recent; oldest recent demotes to INT2.</p>
+            </div>
+
+            <!-- Step 3: Quantize -->
+            <div class="pipe-panel" data-panel="3">
+              <div class="pipe-visual quant-viz">
+                <div class="vec-bar" id="vecBar">
+                  <span class="vec-val" style="--h:85%"></span>
+                  <span class="vec-val" style="--h:40%"></span>
+                  <span class="vec-val" style="--h:95%"></span>
+                  <span class="vec-val" style="--h:30%"></span>
+                  <span class="vec-val" style="--h:55%"></span>
+                  <span class="vec-val" style="--h:70%"></span>
+                  <span class="vec-val" style="--h:25%"></span>
+                  <span class="vec-val" style="--h:60%"></span>
+                </div>
+                <div class="quant-arrow">clip → INT2 → pack</div>
+                <div class="byte-grid" id="byteGrid">
+                  <span class="bit-cell" data-level="0"></span>
+                  <span class="bit-cell" data-level="1"></span>
+                  <span class="bit-cell" data-level="2"></span>
+                  <span class="bit-cell" data-level="3"></span>
+                  <span class="bit-cell" data-level="1"></span>
+                  <span class="bit-cell" data-level="0"></span>
+                  <span class="bit-cell" data-level="3"></span>
+                  <span class="bit-cell" data-level="2"></span>
+                </div>
+                <p class="pack-label">4 × 2-bit values per byte</p>
+              </div>
+              <p class="pipe-desc"><code>k⁺ = Q₂⁺(clip(k·R<sub>K</sub>, τ))</code> — affine asymmetric INT2 with scale/zero, four levels per channel group.</p>
+            </div>
+
+            <!-- Step 4: Decode -->
+            <div class="pipe-panel" data-panel="4">
+              <div class="pipe-visual decode-viz">
+                <div class="decode-path decode-bf16">
+                  <span>BF16 kernel</span>
+                  <small>sink + recent</small>
+                </div>
+                <div class="decode-merge">⊕ merge</div>
+                <div class="decode-path decode-int2">
+                  <span>INT2 kernel</span>
+                  <small>unpack · dequant · accumulate</small>
+                </div>
+                <div class="decode-out">Attention output</div>
+              </div>
+              <p class="pipe-desc">Two first-stage kernels over BF16 and INT2 segments; online softmax merge produces the same result as full-precision attention.</p>
+            </div>
+          </div>
+
+          <div class="step-indicator" id="stepIndicator">Step 1 / 5 — Calibrate</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- System -->
+    <section class="section section-alt" id="system">
+      <div class="container">
+        <h2 class="section-title reveal">Production Serving Path</h2>
+        <p class="section-lead reveal">
+          OSCAR is not just a quantizer — it is a complete SGLang INT2 KV-cache mode compatible with paged attention and prefix caching.
+        </p>
+        <div class="system-diagram reveal">
+          <svg viewBox="0 0 800 220" class="system-svg" aria-label="OSCAR serving diagram">
+            <defs>
+              <marker id="arrowGold" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#9a7b1a"/>
+              </marker>
+            </defs>
+            <rect x="20" y="80" width="120" height="60" rx="8" fill="#fff9eb" stroke="#b8860b" stroke-width="2"/>
+            <text x="80" y="118" text-anchor="middle" fill="#3d3428" font-size="14" font-weight="600" font-family="system-ui, sans-serif">Prefill</text>
+            <path d="M140 110 L180 110" stroke="#9a7b1a" stroke-width="2.5" marker-end="url(#arrowGold)"/>
+            <rect x="180" y="55" width="440" height="110" rx="10" fill="#ffffff" stroke="#c9a227" stroke-width="2"/>
+            <rect x="195" y="72" width="90" height="76" rx="6" fill="#e8f2fc" stroke="#2d6bb3" stroke-width="1.5"/>
+            <text x="240" y="108" text-anchor="middle" fill="#1a4d8c" font-size="12" font-weight="600" font-family="system-ui, sans-serif">BF16 sink</text>
+            <text x="240" y="126" text-anchor="middle" fill="#3f3a34" font-size="9" font-family="system-ui, sans-serif">high precision</text>
+            <rect x="300" y="72" width="200" height="76" rx="6" fill="#fff4d6" stroke="#9a7b1a" stroke-width="1.5"/>
+            <text x="400" y="104" text-anchor="middle" fill="#5c4a12" font-size="13" font-weight="700" font-family="system-ui, sans-serif">INT2 history</text>
+            <text x="400" y="122" text-anchor="middle" fill="#3f3a34" font-size="10" font-family="system-ui, sans-serif">rotated · packed · paged</text>
+            <rect x="515" y="72" width="90" height="76" rx="6" fill="#e8f2fc" stroke="#2d6bb3" stroke-width="1.5"/>
+            <text x="560" y="108" text-anchor="middle" fill="#1a4d8c" font-size="12" font-weight="600" font-family="system-ui, sans-serif">BF16 recent</text>
+            <text x="560" y="126" text-anchor="middle" fill="#3f3a34" font-size="9" font-family="system-ui, sans-serif">sliding window</text>
+            <path d="M620 110 L660 110" stroke="#9a7b1a" stroke-width="2.5" marker-end="url(#arrowGold)"/>
+            <rect x="660" y="80" width="120" height="60" rx="8" fill="#fff9eb" stroke="#b8860b" stroke-width="2"/>
+            <text x="720" y="108" text-anchor="middle" fill="#3d3428" font-size="13" font-weight="600" font-family="system-ui, sans-serif">Triton</text>
+            <text x="720" y="124" text-anchor="middle" fill="#3f3a34" font-size="10" font-family="system-ui, sans-serif">decode kernel</text>
+          </svg>
+        </div>
+        <ul class="system-list reveal">
+          <li>Fused rotate–clip–quantize–pack during prefill and decode demotion</li>
+          <li>Value rotation absorbed into projection weights for compute savings</li>
+          <li>FlashAttention-3 prefill + Triton INT2 decode hybrid mode</li>
+          <li>Compatible with vLLM-style paged KV and SGLang prefix cache</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="section" id="results">
+      <div class="container">
+        <h2 class="section-title reveal">Accuracy &amp; Efficiency</h2>
+        <p class="section-lead reveal">
+          Evaluated on reasoning models with up to 32K-token traces across five reasoning and coding benchmarks.
+          Long-context RULER-NIAH robust up to 128K on Qwen3 models.
+        </p>
+        <div class="results-grid reveal">
+          <div class="result-card">
+            <h4>Qwen3-4B-Thinking</h4>
+            <p class="result-big">3.78</p>
+            <p class="result-sub">BF16 gap (pts) @ 2.28 BPE</p>
+          </div>
+          <div class="result-card">
+            <h4>Qwen3-8B</h4>
+            <p class="result-big">1.42</p>
+            <p class="result-sub">BF16 gap (pts) @ 2.28 BPE</p>
+          </div>
+          <div class="result-card">
+            <h4>Qwen3-32B &amp; GLM-4.7</h4>
+            <p class="result-big">≈ BF16</p>
+            <p class="result-sub">effectively on par</p>
+          </div>
+          <div class="result-card highlight">
+            <h4>vs TurboQuant</h4>
+            <p class="result-big">+40.1</p>
+            <p class="result-sub">mean score on Qwen3-4B (2.28 vs 3.25 BPE)</p>
+          </div>
+        </div>
+
+        <div class="table-wrap reveal">
+          <p class="table-caption">
+            Main accuracy on four model configurations and five benchmarks (32K generation; μ±σ over 5 seeds unless noted).
+            BPE = effective bits per KV element @ 128K context. <strong>Drop</strong> = gap to BF16 mean.
+          </p>
+          <div class="table-scroll">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Method</th>
+                  <th>BPE</th>
+                  <th>GPQA</th>
+                  <th>HumanE</th>
+                  <th>LCB v6</th>
+                  <th>AIME25</th>
+                  <th>MATH500</th>
+                  <th>Mean</th>
+                  <th>Drop</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="model-row"><td rowspan="5">Qwen3-4B-Thinking</td><td>BF16</td><td>16.00</td><td>67.27</td><td>94.05</td><td>48.66</td><td>74.67</td><td>93.55</td><td>75.64</td><td>—</td></tr>
+                <tr><td>Saw-INT4</td><td>4.25</td><td>66.37</td><td>89.78</td><td>46.20</td><td>70.00</td><td>93.19</td><td>73.11</td><td>−2.53</td></tr>
+                <tr><td>TurboQuant*</td><td>3.25</td><td>41.41</td><td>31.83</td><td>0.58</td><td>16.67</td><td>68.20</td><td>31.74</td><td>−43.90</td></tr>
+                <tr><td>QuaRot-INT2</td><td>2.25</td><td>0.34</td><td>0.98</td><td>0.00</td><td>0.00</td><td>5.67</td><td>1.40</td><td>−74.24</td></tr>
+                <tr class="highlight-row"><td><strong>OSCAR</strong></td><td><strong>2.28</strong></td><td><strong>64.95</strong></td><td><strong>92.24</strong></td><td><strong>45.38</strong></td><td><strong>64.00</strong></td><td><strong>92.75</strong></td><td><strong>71.86</strong></td><td><strong>−3.78</strong></td></tr>
+
+                <tr class="model-row"><td rowspan="5">Qwen3-8B</td><td>BF16</td><td>16.00</td><td>56.67</td><td>85.95</td><td>49.01</td><td>70.00</td><td>92.59</td><td>70.84</td><td>—</td></tr>
+                <tr><td>Saw-INT4</td><td>4.25</td><td>54.85</td><td>86.44</td><td>47.95</td><td>68.00</td><td>92.63</td><td>69.97</td><td>−0.87</td></tr>
+                <tr><td>TurboQuant*</td><td>3.25</td><td>55.05</td><td>74.63</td><td>21.05</td><td>46.67</td><td>87.00</td><td>56.88</td><td>−13.96</td></tr>
+                <tr><td>QuaRot-INT2</td><td>2.25</td><td>14.98</td><td>9.80</td><td>0.58</td><td>2.22</td><td>23.13</td><td>10.14</td><td>−60.70</td></tr>
+                <tr class="highlight-row"><td><strong>OSCAR</strong></td><td><strong>2.28</strong></td><td><strong>55.05</strong></td><td><strong>87.88</strong></td><td><strong>46.32</strong></td><td><strong>66.67</strong></td><td><strong>92.22</strong></td><td><strong>69.42</strong></td><td><strong>−1.42</strong></td></tr>
+
+                <tr class="model-row"><td rowspan="3">Qwen3-32B</td><td>BF16</td><td>16.00</td><td>58.49</td><td>91.19</td><td>59.06</td><td>68.67</td><td>93.55</td><td>74.19</td><td>—</td></tr>
+                <tr><td>TurboQuant*</td><td>3.25</td><td>58.69</td><td>88.41</td><td>55.56</td><td>66.67</td><td>90.60</td><td>71.99</td><td>−2.20</td></tr>
+                <tr class="highlight-row"><td><strong>OSCAR</strong></td><td><strong>2.28</strong></td><td><strong>60.40</strong></td><td><strong>90.12</strong></td><td><strong>53.57</strong></td><td><strong>74.00</strong></td><td><strong>92.75</strong></td><td><strong>74.17</strong></td><td><strong>−0.02</strong></td></tr>
+
+                <tr class="model-row"><td rowspan="3">GLM-4.7-FP8</td><td>BF16</td><td>16.00</td><td>73.23</td><td>91.46</td><td>49.12</td><td>80.00</td><td>95.66</td><td>77.89</td><td>—</td></tr>
+                <tr><td>TurboQuant*</td><td>3.25</td><td>66.67</td><td>90.24</td><td>58.48</td><td>80.00</td><td>95.39</td><td>78.15</td><td>+0.26</td></tr>
+                <tr class="highlight-row"><td><strong>OSCAR</strong></td><td><strong>2.28</strong></td><td><strong>73.57</strong></td><td><strong>91.06</strong></td><td><strong>52.63</strong></td><td><strong>78.89</strong></td><td><strong>94.66</strong></td><td><strong>78.16</strong></td><td><strong>+0.27</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="table-footnote">*TurboQuant: single-run (vLLM path too slow for 5-seed repeats). Naive INT2 and additional baselines in the paper.</p>
+        </div>
+
+        <div class="efficiency-bar reveal">
+          <div class="eff-item">
+            <span class="eff-label">KV memory</span>
+            <div class="eff-track"><div class="eff-fill" style="--w:88%"></div></div>
+            <span class="eff-val">~8× reduction</span>
+          </div>
+          <div class="eff-item">
+            <span class="eff-label">Throughput (large batch)</span>
+            <div class="eff-track"><div class="eff-fill" style="--w:78%"></div></div>
+            <span class="eff-val">up to ~7×</span>
+          </div>
+          <div class="eff-item">
+            <span class="eff-label">Decode bs=1</span>
+            <div class="eff-track"><div class="eff-fill" style="--w:55%"></div></div>
+            <span class="eff-val">up to ~3×</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison -->
+    <section class="section section-alt" id="comparison">
+      <div class="container">
+        <h2 class="section-title reveal">OSCAR vs TurboQuant</h2>
+        <div class="compare-table reveal">
+          <div class="compare-row compare-header">
+            <span></span>
+            <span>TurboQuant</span>
+            <span>OSCAR</span>
+          </div>
+          <div class="compare-row">
+            <span>Target</span>
+            <span>Generic online vector quantization</span>
+            <span class="highlight-text">Attention-aware 2-bit KV serving</span>
+          </div>
+          <div class="compare-row">
+            <span>Rotation</span>
+            <span>Data-oblivious random</span>
+            <span class="highlight-text">Covariance-aware offline</span>
+          </div>
+          <div class="compare-row">
+            <span>Effective BPE</span>
+            <span>3.25</span>
+            <span class="highlight-text">2.28</span>
+          </div>
+          <div class="compare-row">
+            <span>Protection</span>
+            <span>—</span>
+            <span class="highlight-text">BF16 sink + recent</span>
+          </div>
+          <div class="compare-row">
+            <span>System</span>
+            <span>Quantizer backend</span>
+            <span class="highlight-text">Full SGLang path + kernels</span>
+          </div>
+        </div>
+        <p class="compare-note reveal">
+          TurboQuant solves generic online vector quantization. OSCAR solves attention-aware 2-bit KV-cache serving.
+          Both are useful — they optimize different targets.
+        </p>
+
+        <div class="compat-panel reveal">
+          <h3>Are OSCAR and TurboQuant compatible?</h3>
+          <p class="compat-lead">
+            <strong>Conceptually, yes</strong> — but <strong>not as a plug-and-play substitution</strong>.
+            They address overlapping ideas (rotation + low-bit quantization) with different objectives, assumptions, and serving stacks.
+          </p>
+
+          <div class="compat-grid">
+            <article class="compat-card">
+              <h4>TurboQuant</h4>
+              <ul>
+                <li>Generic <em>online</em> vector quantizer</li>
+                <li>Data-oblivious random rotation</li>
+                <li>Optimizes MSE / inner-product distortion</li>
+                <li>Strong rate–distortion theory; quantizer backend</li>
+                <li>~3.25 BPE in our fair KV comparison (no mixed-precision exemptions)</li>
+              </ul>
+            </article>
+            <article class="compat-card compat-card-oscar">
+              <h4>OSCAR</h4>
+              <ul>
+                <li>Attention-aware <em>2-bit KV-cache serving</em> framework</li>
+                <li>Offline covariance-aware rotations (<code>Q<sup>⊤</sup>Q</code>, <code>V<sup>⊤</sup>S<sup>⊤</sup>SV</code>)</li>
+                <li>BF16 sink + recent protection + INT2 history layout</li>
+                <li>Full SGLang / Triton path with paged KV</li>
+                <li>2.28 BPE with near-BF16 accuracy on reasoning models</li>
+              </ul>
+            </article>
+          </div>
+
+          <div class="compat-takeaways">
+            <p><strong>What composes in principle:</strong>
+              One could explore TurboQuant-style codebooks <em>after</em> OSCAR's attention-aware rotation,
+              or test OSCAR's rotation targets inside a TurboQuant-like backend.
+            </p>
+            <p><strong>What does not drop in today:</strong>
+              Swapping one method for the other would require new kernels, revised bit accounting (effective BPE),
+              and fresh end-to-end validation — the strongest theoretical assumptions of each approach are not automatically composable.
+            </p>
+            <p class="compat-bottom">
+              Bottom line: the methods are <strong>complementary research directions</strong>, not interchangeable modules.
+              TurboQuant is the right tool for generic vector quantization; OSCAR is the right tool when the goal is deployable INT2 KV-cache serving for long-context LLMs.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Citation -->
+    <section class="section" id="citation">
+      <div class="container">
+        <h2 class="section-title reveal">Citation</h2>
+        <p class="citation-lead reveal">Paper citation forthcoming — please cite the <a href="https://github.com/FutureMLS-Lab/OSCAR" target="_blank" rel="noopener">OSCAR GitHub repository</a> until then.</p>
+        <pre class="bibtex reveal" id="bibtex">@misc{oscar2026github,
+  title={{OSCAR}: Offline Spectral Covariance-Aware Rotation for 2-bit {KV} Cache Quantization},
+  author={Zhou, Zhongzhu and Zhuang, Donglin and Li, Jisen and Chen, Ziyan and Song, Shuaiwen Leon and Athiwaratkun, Ben and Wu, Xiaoxia},
+  year={2026},
+  howpublished={GitHub repository},
+  url={https://github.com/FutureMLS-Lab/OSCAR},
+  note={Paper citation forthcoming}
+}</pre>
+        <div class="citation-actions reveal">
+          <button type="button" class="btn btn-outline btn-sm" id="copyBibSection" data-default-label="Copy citation">Copy citation</button>
+          <a href="https://github.com/FutureMLS-Lab/OSCAR" class="btn btn-outline btn-sm" target="_blank" rel="noopener">Open GitHub</a>
+          <button type="button" class="btn btn-outline btn-sm cite-trigger">Cite</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Cite modal -->
+  <div class="cite-modal" id="citeModal" hidden aria-hidden="true">
+    <div class="cite-modal-backdrop" data-cite-close tabindex="-1"></div>
+    <div class="cite-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="citeModalTitle">
+      <button type="button" class="cite-modal-close" data-cite-close aria-label="Close">&times;</button>
+      <h3 id="citeModalTitle">Cite OSCAR</h3>
+      <p class="cite-modal-hint citation-lead">Paper citation forthcoming — please cite the GitHub repository entry below until then.</p>
+      <pre class="bibtex bibtex-modal" id="bibtexModal">@misc{oscar2026github,
+  title={{OSCAR}: Offline Spectral Covariance-Aware Rotation for 2-bit {KV} Cache Quantization},
+  author={Zhou, Zhongzhu and Zhuang, Donglin and Li, Jisen and Chen, Ziyan and Song, Shuaiwen Leon and Athiwaratkun, Ben and Wu, Xiaoxia},
+  year={2026},
+  howpublished={GitHub repository},
+  url={https://github.com/FutureMLS-Lab/OSCAR},
+  note={Paper citation forthcoming}
+}</pre>
+      <div class="cite-modal-actions">
+        <button type="button" class="btn btn-primary" id="copyBibModal" data-default-label="Copy citation">Copy citation</button>
+        <a href="https://github.com/FutureMLS-Lab/OSCAR" class="btn btn-outline" target="_blank" rel="noopener">Open GitHub</a>
+        <button type="button" class="btn btn-outline" data-cite-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <img src="assets/oscar_logo_kv_transparent.png" alt="" class="footer-logo">
+      <p>OSCAR — Offline Spectral Covariance-Aware Rotation for 2-bit KV Cache Quantization</p>
+      <div class="footer-links">
+        <a href="https://github.com/FutureMLS-Lab/OSCAR" target="_blank" rel="noopener">GitHub</a>
+        <a href="assets/paper.pdf" target="_blank" rel="noopener">Paper</a>
+        <a href="https://huggingface.co/Zhongzhu/OSCAR-RotationZoo" target="_blank" rel="noopener">RotationZoo</a>
+        <button type="button" class="footer-cite cite-trigger">Cite</button>
+      </div>
+      <p class="footer-copy">&copy; 2026 OSCAR authors</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
