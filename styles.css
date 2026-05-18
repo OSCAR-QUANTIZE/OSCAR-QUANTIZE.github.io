@@ -1464,8 +1464,16 @@ button.nav-cta:hover {
 
 /* Decode viz */
 .decode-viz {
-  flex-direction: row;
-  gap: 1.5rem;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.decode-kernel-row {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 1rem;
+  width: 100%;
 }
 
 .decode-path {
@@ -1473,6 +1481,8 @@ button.nav-cta:hover {
   border-radius: var(--radius);
   text-align: center;
   min-width: 140px;
+  flex: 1 1 0;
+  max-width: 230px;
 }
 
 .decode-bf16 {
@@ -1492,6 +1502,7 @@ button.nav-cta:hover {
   font-size: 1.5rem;
   color: var(--gold);
   align-self: center;
+  line-height: 1;
 }
 
 .decode-out {
@@ -1502,6 +1513,8 @@ button.nav-cta:hover {
   color: var(--gold-light);
   font-weight: 600;
   animation: out-glow 2s ease-in-out infinite;
+  min-width: min(320px, 100%);
+  text-align: center;
 }
 
 @keyframes out-glow {
@@ -2253,7 +2266,8 @@ body.cite-modal-open {
 
   .hero-pipeline-wrap .pipeline-controls { flex-wrap: wrap; }
 
-  .decode-viz { flex-direction: column; }
+  .decode-kernel-row { flex-direction: column; align-items: center; }
+  .decode-path { width: min(260px, 100%); }
 
   .compare-row {
     grid-template-columns: 1fr;

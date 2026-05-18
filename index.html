@@ -206,15 +206,17 @@
                 <!-- Step 4: Decode -->
                 <div class="pipe-panel" data-panel="4">
                   <div class="pipe-visual decode-viz">
-                    <div class="decode-path decode-bf16">
-                      <span>BF16 kernel</span>
-                      <small>sink + recent</small>
+                    <div class="decode-kernel-row">
+                      <div class="decode-path decode-bf16">
+                        <span>BF16 kernel</span>
+                        <small>sink + recent</small>
+                      </div>
+                      <div class="decode-path decode-int2">
+                        <span>INT2 kernel</span>
+                        <small>unpack · dequant · accumulate</small>
+                      </div>
                     </div>
                     <div class="decode-merge">⊕ merge</div>
-                    <div class="decode-path decode-int2">
-                      <span>INT2 kernel</span>
-                      <small>unpack · dequant · accumulate</small>
-                    </div>
                     <div class="decode-out">Attention output</div>
                   </div>
                   <p class="pipe-desc">Two first-stage kernels over BF16 and INT2 segments; online softmax merge produces the same result as full-precision attention.</p>
