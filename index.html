@@ -501,13 +501,20 @@
               </tbody>
             </table>
           </div>
-          <p class="table-footnote">*TurboQuant: single-run (vLLM path too slow for 5-seed repeats). Naive INT2 and additional baselines in the paper.</p>
+          <div class="table-notes">
+            <p>
+              <strong>Notes.</strong> For a fair comparison at a comparable bit budget, TurboQuant results use vLLM's implementation modified so that all layers are quantized (no mixed precision); the original TurboQuant keeps the first, last, and selected middle layers in full precision. We run it in its K3V3 configuration (3-bit K, 3-bit V) to land near the OSCAR bit budget. TurboQuant entries are single-run results because its vLLM path is too slow for repeated 32K-context evaluations under our compute budget.
+            </p>
+            <p>
+              QuaRot-INT2 is the standard 2-bit KV-quant recipe (data-free Hadamard rotation per layer). Saw-INT4 is an INT4 reference for context. Naive INT2 is per-token symmetric INT2 with no rotation.
+            </p>
+          </div>
         </div>
 
         <figure class="figure-block throughput-figure reveal">
           <img src="assets/figure6_prefix_cache_throughput.png" alt="Effect of prefix-cache hit ratio on end-to-end serving throughput" loading="lazy">
           <figcaption>
-            <p class="fig-caption-title">Figure 6. Effect of prefix-cache hit ratio on end-to-end serving throughput</p>
+            <p class="fig-caption-title">Effect of prefix-cache hit ratio on end-to-end serving throughput</p>
             <p>
               Effect of prefix-cache hit ratio on end-to-end serving throughput (100k ISL, 1K OSL).
               Each subplot shows median per-user throughput \(U\) (x-axis, tok/s) versus mean per-GPU throughput \(G\)

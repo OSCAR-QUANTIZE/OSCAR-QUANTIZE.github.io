@@ -1138,6 +1138,26 @@ button.nav-cta:hover {
   font-style: italic;
 }
 
+.table-notes {
+  max-width: 68rem;
+  margin: 0.85rem auto 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--figure-border);
+  border-radius: 12px;
+  background: var(--surface-panel);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.table-notes p {
+  margin-bottom: 0.55rem;
+}
+
+.table-notes p:last-child {
+  margin-bottom: 0;
+}
+
 /* Pipeline animation */
 .pipeline-wrap {
   background: var(--bg-card);
@@ -1555,7 +1575,15 @@ button.nav-cta:hover {
 }
 
 .throughput-figure {
-  margin-top: 2rem;
+  width: min(940px, 100%);
+  margin: 2rem auto 0;
+}
+
+.throughput-figure figcaption {
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
 }
 
 /* Compare table */
