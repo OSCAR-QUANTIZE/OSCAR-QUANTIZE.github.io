@@ -179,6 +179,22 @@ body {
 
 .nav-links a:hover { color: var(--gold); }
 
+.nav-links a.nav-intuition {
+  padding: 0.42rem 0.88rem;
+  border: 1px solid rgba(154, 123, 44, 0.3);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 252, 242, 0.96), rgba(238, 241, 245, 0.82));
+  color: var(--gold-light);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(90, 70, 20, 0.08);
+}
+
+.nav-links a.nav-intuition:hover {
+  border-color: var(--gold-mid);
+  background: #fffdf4;
+  color: var(--gold-light);
+}
+
 .nav-cta {
   display: inline-flex;
   align-items: center;
