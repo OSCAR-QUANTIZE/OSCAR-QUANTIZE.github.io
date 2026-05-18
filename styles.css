@@ -459,9 +459,15 @@ button.nav-cta:hover {
   grid-template-columns: repeat(4, 1fr);
   gap: 0.55rem;
   width: min(640px, 100%);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background: var(--bg-glass);
   border: 1px solid var(--border);
   border-radius: 11px;
@@ -2313,7 +2319,7 @@ body.cite-modal-open {
   .hero-metrics { grid-template-columns: 1fr; }
   .hero-cache-strip { grid-template-columns: 1fr; }
   .hero-mini-flow { grid-template-columns: repeat(2, 1fr); }
-  .metric-card { display: flex; justify-content: space-between; align-items: center; text-align: left; }
+  .metric-card { text-align: center; }
   .metric-value { font-size: 1.25rem; }
   .ablation-grid { grid-template-columns: 1fr; }
 }
