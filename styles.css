@@ -180,18 +180,21 @@ body {
 .nav-links a:hover { color: var(--gold); }
 
 .nav-links a.nav-intuition {
-  padding: 0.42rem 0.88rem;
-  border: 1px solid rgba(154, 123, 44, 0.3);
+  padding: 0.42rem 0.92rem;
+  border: 1px solid rgba(154, 123, 44, 0.42);
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(255, 252, 242, 0.96), rgba(238, 241, 245, 0.82));
+  background: linear-gradient(135deg, rgba(255, 248, 225, 0.98), rgba(255, 255, 255, 0.9));
   color: var(--gold-light);
+  font-family: var(--font-display);
+  font-size: 1rem;
   font-weight: 700;
-  box-shadow: 0 1px 4px rgba(90, 70, 20, 0.08);
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(90, 70, 20, 0.1);
 }
 
 .nav-links a.nav-intuition:hover {
   border-color: var(--gold-mid);
-  background: #fffdf4;
+  background: linear-gradient(135deg, rgba(255, 244, 210, 1), #fff);
   color: var(--gold-light);
 }
 
