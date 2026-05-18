@@ -505,12 +505,15 @@
         </div>
 
         <figure class="figure-block throughput-figure reveal">
-          <img src="assets/figure6_throughput.png" alt="Job-level throughput at 100k sequence length across batch sizes" loading="lazy">
+          <img src="assets/figure6_prefix_cache_throughput.png" alt="Effect of prefix-cache hit ratio on end-to-end serving throughput" loading="lazy">
           <figcaption>
-            <p class="fig-caption-title">End-to-end serving throughput from the paper</p>
+            <p class="fig-caption-title">Figure 6. Effect of prefix-cache hit ratio on end-to-end serving throughput</p>
             <p>
-              Job-level throughput at 100k-token sequence length as batch size increases.
-              Each group compares BF16, Saw-INT4, and OSCAR on Qwen3-4B/8B and GLM-4.7-FP8.
+              Effect of prefix-cache hit ratio on end-to-end serving throughput (100k ISL, 1K OSL).
+              Each subplot shows median per-user throughput \(U\) (x-axis, tok/s) versus mean per-GPU throughput \(G\)
+              (y-axis, tok/s), with markers denoting batch sizes \(\mathrm{BS} \in \{1,8,16,32\}\).
+              Rows correspond to Qwen3-4B-Thinking-2507 and GLM-4.7-FP8. Columns correspond to radix cache disabled,
+              radix cache enabled during normal execution, and immediate replay after warmup (near-100% hit ratio).
             </p>
           </figcaption>
         </figure>
