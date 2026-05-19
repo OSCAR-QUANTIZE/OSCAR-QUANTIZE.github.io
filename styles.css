@@ -1112,6 +1112,11 @@ button.nav-cta:hover {
   margin: 2.5rem 0;
 }
 
+.table-wrap-compact {
+  width: min(760px, 100%);
+  margin: 2.25rem auto;
+}
+
 .table-caption {
   text-align: center;
   color: var(--text-secondary);
@@ -1135,6 +1140,10 @@ button.nav-cta:hover {
   min-width: 720px;
   border-collapse: collapse;
   font-size: 0.82rem;
+}
+
+.compact-results-table {
+  min-width: 560px;
 }
 
 .results-table th,

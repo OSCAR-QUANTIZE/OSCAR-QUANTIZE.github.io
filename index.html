@@ -522,6 +522,34 @@
           </div>
         </div>
 
+        <div class="table-wrap table-wrap-compact reveal">
+          <p class="table-caption">
+            AIME25 at 32K generation, comparing OSCAR with KIVI-KV2 and Kitty under similar low-bit KV-cache budgets.
+          </p>
+          <div class="table-scroll">
+            <table class="results-table compact-results-table">
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>BPE</th>
+                  <th>Qwen3-8B</th>
+                  <th>Qwen3-32B</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Original BF16</td><td>16.00</td><td>66.00 &plusmn; 7.33</td><td>72.59 &plusmn; 7.41</td></tr>
+                <tr><td>KIVI-KV2</td><td>2.25</td><td>52.33 &plusmn; 9.00</td><td>57.41 &plusmn; 9.26</td></tr>
+                <tr><td>KIVI-KV2*</td><td>2.26</td><td>57.67 &plusmn; 9.00</td><td>59.05 &plusmn; 12.38</td></tr>
+                <tr><td>Kitty</td><td>2.39</td><td>59.67 &plusmn; 10.33</td><td>69.26 &plusmn; 9.26</td></tr>
+                <tr class="highlight-row"><td><strong>OSCAR</strong></td><td><strong>2.38</strong></td><td><strong>66.67 &plusmn; 3.33</strong></td><td><strong>74.00 &plusmn; 5.48</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="table-footnote">
+            Values are pass@1 accuracy (%) with standard deviation; KIVI-KV2* denotes the KIVI variant reported in the comparison setting.
+          </p>
+        </div>
+
         <figure class="figure-block throughput-figure reveal">
           <img src="assets/figure6_prefix_cache_throughput.png" alt="Effect of prefix-cache hit ratio on end-to-end serving throughput" loading="lazy">
           <figcaption>
