@@ -43,7 +43,7 @@ OSCAR_REPO=FutureMLS-Lab/OSCAR OSCAR_PAGES_PATH=docs ./scripts/deploy-pages.sh
 | Resource | URL |
 |----------|-----|
 | Code | https://github.com/FutureMLS-Lab/OSCAR |
-| Paper | https://github.com/FutureMLS-Lab/OSCAR/blob/main/materials/main.pdf |
+| Paper | https://arxiv.org/pdf/2605.17757 |
 | RotationZoo | https://huggingface.co/Zhongzhu/OSCAR-RotationZoo |
 
 ## Files
